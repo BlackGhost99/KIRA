@@ -1,0 +1,18 @@
+# Liste de sources fiables (une par ligne)
+# Exemples :
+# https://arxiv.org/rss/cs
+# https://news.ycombinator.com/rss
+# Vous pouvez ajouter un score :
+# https://arxiv.org/rss/cs | 0.9
+
+# --- Apprentissage (personnalisé) ---
+https://www.khanacademy.org/ | 0.90
+https://exo7.emath.fr/ | 0.90
+https://ocw.mit.edu/ | 0.95
+# Walter Lewin (MIT OCW) : donne-moi l'URL OCW exacte si tu veux la source dédiée.
+https://see.stanford.edu/ | 0.90
+https://cs50.harvard.edu/ | 0.90
+https://openclassrooms.com/ | 0.85
+https://www.freecodecamp.org/news/ | 0.85
+https://github.blog/ | 0.85
+https://www.youtube.com/feeds/videos.xml?channel_id=UCsz9DiwPtgDvxJ-njWnieZw | 0.80

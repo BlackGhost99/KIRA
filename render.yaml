@@ -1,0 +1,37 @@
+# Blueprint Render : « New + > Blueprint », choisir le dépôt BlackGhost99/KIRA.
+# Les secrets (sync: false) sont demandés dans le tableau de bord, jamais écrits ici.
+services:
+  - type: web
+    name: kira
+    runtime: docker
+    plan: free            # passer à « starter » (≈7 $/mois) évite la mise en veille de 15 min
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /healthz
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CRON_TOKEN
+        generateValue: true
+      - key: OWNER_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: OWNER_NAME
+        value: Brice
+      - key: TIMEZONE
+        value: Africa/Libreville
+      - key: GITHUB_REPO
+        value: BlackGhost99/KIRA

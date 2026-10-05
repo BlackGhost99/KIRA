@@ -1,0 +1,27 @@
+name: Veille quotidienne
+
+# Réveille KIRA chaque matin pour qu'il lise ses sources et consolide sa mémoire.
+# À configurer une fois : Settings > Secrets and variables > Actions >
+#   KIRA_URL    = https://ton-service.onrender.com   (sans « / » final)
+#   CRON_TOKEN  = la valeur de CRON_TOKEN visible dans Render > Environment
+on:
+  schedule:
+    - cron: "0 5 * * *"   # 05:00 UTC = 06:00 à Libreville
+  workflow_dispatch:
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lancer la veille
+        env:
+          KIRA_URL: ${{ secrets.KIRA_URL }}
+          CRON_TOKEN: ${{ secrets.CRON_TOKEN }}
+        run: |
+          if [ -z "$KIRA_URL" ] || [ -z "$CRON_TOKEN" ]; then
+            echo "::notice::Secrets KIRA_URL / CRON_TOKEN non configurés : veille ignorée."
+            exit 0
+          fi
+          # Un service gratuit Render met jusqu'à une minute à se réveiller : on réessaie.
+          curl --fail --silent --show-error --retry 5 --retry-delay 20 --retry-all-errors --max-time 120 \
+            -X POST -H "X-Cron-Token: $CRON_TOKEN" "$KIRA_URL/api/cron/daily"

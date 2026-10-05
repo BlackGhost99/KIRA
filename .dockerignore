@@ -1,0 +1,10 @@
+.git
+.github
+__pycache__
+*.pyc
+.env
+*.db
+legacy
+docs
+scripts
+.venv

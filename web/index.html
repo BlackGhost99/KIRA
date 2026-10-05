@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0c1a2b">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KIRA">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>KIRA</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icons/favicon.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/vendor/katex.min.css">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- Pictogrammes : un seul fichier, aucun service externe -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+  <symbol id="i-thumb" viewBox="0 0 24 24"><path d="M7 11v9H4v-9h3zM7 11l4-7a2 2 0 0 1 3 2l-1 4h5.5a2 2 0 0 1 2 2.4l-1.3 6A2 2 0 0 1 17.2 20H7"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4z"/><path d="M5 17a3 3 0 0 1 3-3h10"/></symbol>
+  <symbol id="i-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8L11 3zM19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 8l4 4-4 4M20 12H9"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4M4 4v4h4M4 13a8 8 0 0 0 14.5 4M20 20v-4h-4"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 21v-9M12 12c0-4 2.5-6 7-6 0 4-2.5 6-7 6zM12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-device" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 19.5h20"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+</svg>
+
+<!-- Écran de démarrage / réveil du serveur -->
+<div id="splash" class="gate">
+  <div class="gate-card">
+    <div class="mark" aria-hidden="true">K</div>
+    <p id="splash-text" class="gate-text">Ouverture de KIRA…</p>
+  </div>
+</div>
+
+<!-- Connexion -->
+<div id="login" class="gate" hidden>
+  <form id="login-form" class="gate-card" autocomplete="on">
+    <div class="mark" aria-hidden="true">K</div>
+    <h1 class="gate-title">KIRA</h1>
+    <p class="gate-text">Ton partenaire de recherche.</p>
+    <label class="field">
+      <span>Mot de passe</span>
+      <input id="login-password" type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn primary wide" type="submit">Entrer</button>
+    <p id="login-error" class="form-error" role="alert"></p>
+  </form>
+</div>
+
+<!-- Application -->
+<div id="app" class="app" hidden>
+  <div class="rail">
+    <div class="brand"><span class="mark small" aria-hidden="true">K</span><span class="brand-name">KIRA</span></div>
+
+    <nav class="nav" aria-label="Sections">
+      <button class="nav-btn" data-view="chat" aria-current="page"><svg class="ic"><use href="#i-chat"/></svg><span>Discuter</span></button>
+      <button class="nav-btn" data-view="memory"><svg class="ic"><use href="#i-book"/></svg><span>Mémoire</span></button>
+      <button class="nav-btn" data-view="veille"><svg class="ic"><use href="#i-radar"/></svg><span>Veille</span><i class="dot" id="badge-veille" hidden></i></button>
+      <button class="nav-btn" data-view="more"><svg class="ic"><use href="#i-sliders"/></svg><span>Plus</span><i class="dot" id="badge-more" hidden></i></button>
+    </nav>
+
+    <aside id="history" class="history" aria-label="Conversations">
+      <div class="history-head">
+        <h2>Conversations</h2>
+        <button class="icon-btn only-drawer" id="history-close" aria-label="Fermer"><svg class="ic"><use href="#i-x"/></svg></button>
+      </div>
+      <button class="btn wide" id="new-chat-rail"><svg class="ic"><use href="#i-plus"/></svg>Nouvelle conversation</button>
+      <ul id="history-list" class="history-list"></ul>
+    </aside>
+  </div>
+  <div id="scrim" class="scrim" hidden></div>
+
+  <main class="main">
+    <!-- Discuter -->
+    <section id="view-chat" class="view chat">
+      <header class="bar">
+        <button class="icon-btn only-drawer" id="history-open" aria-label="Conversations"><svg class="ic"><use href="#i-menu"/></svg></button>
+        <h1 id="chat-title" class="bar-title" tabindex="0" title="Renommer">Nouvelle conversation</h1>
+        <button class="icon-btn" id="new-chat" aria-label="Nouvelle conversation"><svg class="ic"><use href="#i-plus"/></svg></button>
+      </header>
+
+      <div id="thread" class="thread" role="log" aria-live="polite">
+        <div id="welcome" class="welcome">
+          <h2 id="welcome-greeting" class="greeting">Bonjour</h2>
+          <p class="lede">Je suis là. Qu'est-ce qu'on explore aujourd'hui ?</p>
+          <div id="welcome-learned" class="learned" hidden></div>
+          <ul id="welcome-suggestions" class="suggestions"></ul>
+        </div>
+        <div id="messages" class="messages"></div>
+      </div>
+
+      <form id="composer" class="composer">
+        <div class="composer-box">
+          <textarea id="input" rows="1" placeholder="Écris à KIRA…" aria-label="Ton message" enterkeyhint="send"></textarea>
+          <div class="composer-row">
+            <button type="button" id="deep" class="chip toggle" aria-pressed="false" title="Plus lent, plus approfondi : pour les raisonnements difficiles">
+              <svg class="ic"><use href="#i-spark"/></svg><span>Réflexion approfondie</span>
+            </button>
+            <button type="submit" id="send" class="send" aria-label="Envoyer" disabled><svg class="ic"><use href="#i-send"/></svg></button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- Mémoire -->
+    <section id="view-memory" class="view page" hidden>
+      <header class="page-head">
+        <h1>Ce que je sais de toi</h1>
+        <p>Tout ce que je retiens, tu peux le lire, le corriger ou l'effacer.</p>
+      </header>
+      <div class="toolbar">
+        <label class="search"><svg class="ic"><use href="#i-search"/></svg><input id="memory-q" type="search" placeholder="Chercher" aria-label="Chercher dans la mémoire"></label>
+        <button class="btn" id="memory-add-btn"><svg class="ic"><use href="#i-plus"/></svg>Ajouter</button>
+      </div>
+      <div id="memory-kinds" class="seg" role="tablist" aria-label="Types de souvenirs"></div>
+      <form id="memory-add" class="card form" hidden>
+        <label class="field"><span>Quoi retenir ?</span><textarea id="memory-add-text" rows="3" maxlength="4000" required></textarea></label>
+        <div class="row">
+          <label class="field grow"><span>Type</span>
+            <select id="memory-add-kind"><option value="profile">Sur toi</option><option value="fact">Fait</option><option value="note">Note</option></select>
+          </label>
+          <div class="actions"><button type="button" class="btn ghost" id="memory-add-cancel">Annuler</button><button class="btn primary" type="submit">Retenir</button></div>
+        </div>
+      </form>
+      <div id="memory-list" class="list"></div>
+    </section>
+
+    <!-- Veille -->
+    <section id="view-veille" class="view page" hidden>
+      <header class="page-head">
+        <h1>Ce que j'ai appris</h1>
+        <p id="veille-sub">Je lis des sources fiables pour toi. Tu décides de ce qui entre dans ma mémoire.</p>
+      </header>
+      <div class="toolbar split">
+        <button class="btn" id="veille-run"><svg class="ic"><use href="#i-refresh"/></svg><span>Lancer une veille</span></button>
+        <button class="btn ghost" id="veille-all" hidden>Garder les fiables</button>
+      </div>
+      <div id="veille-tabs" class="seg" role="tablist" aria-label="Veille"></div>
+      <div id="veille-body" class="list"></div>
+    </section>
+
+    <!-- Plus -->
+    <section id="view-more" class="view page" hidden>
+      <header class="page-head">
+        <h1>Plus</h1>
+        <p>Mon évolution, mes réglages, ton journal.</p>
+      </header>
+
+      <section class="block" id="devices">
+        <h2><svg class="ic"><use href="#i-device"/></svg>Mes machines</h2>
+        <p class="hint">C'est mon « cœur » : là où j'agis pour de vrai sur tes appareils (fichiers, commandes, écran). Pour chaque machine, tu choisis ce que je fais <b>librement</b>, ce que je ne fais qu'<b>avec ton accord</b>, et ce qui est <b>interdit</b>. Tu vois toujours la commande exacte avant d'autoriser.</p>
+        <div id="dev-global" class="kv" hidden>
+          <span class="k">Tout mettre en pause</span>
+          <span class="v"><button type="button" id="dev-pause-all" class="switch" role="switch" aria-checked="false" aria-label="Mettre toutes les machines en pause"></button></span>
+        </div>
+        <div id="dev-list" class="list"></div>
+        <div class="stack" style="margin-top:12px"><button type="button" class="btn" id="dev-add"><svg class="ic"><use href="#i-plus"/></svg>Ajouter une machine</button></div>
+        <div id="dev-pair" class="card pair" hidden></div>
+      </section>
+
+      <section class="block" id="evo">
+        <h2><svg class="ic"><use href="#i-sprout"/></svg>Comment je peux m'améliorer</h2>
+        <p class="hint">Je relis ce que tu m'as dit, ce qui t'a déplu et ce que j'ai appris, puis je te propose une amélioration de moi-même. Rien ne change sans ton accord, et je ne touche jamais à mes règles de sécurité.</p>
+        <form id="evo-form" class="row">
+          <label class="field grow"><span>Une piste ? (facultatif)</span><input id="evo-goal" type="text" maxlength="1500" placeholder="Ex. : être plus concis"></label>
+          <button class="btn primary" id="evo-go" type="submit">Chercher</button>
+        </form>
+        <p id="evo-state" class="hint" hidden></p>
+        <div id="evo-list" class="list"></div>
+      </section>
+
+      <section class="block" id="settings">
+        <h2><svg class="ic"><use href="#i-sliders"/></svg>Réglages</h2>
+        <div id="settings-body"></div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<div id="tray" class="tray" role="region" aria-label="Demandes d'accord" hidden></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script src="/vendor/marked.umd.js" defer></script>
+<script src="/vendor/purify.min.js" defer></script>
+<script src="/vendor/katex.min.js" defer></script>
+<script src="/app.js" defer></script>
+</body>
+</html>

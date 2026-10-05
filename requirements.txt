@@ -1,0 +1,15 @@
+# Serveur
+starlette>=1.0,<2
+uvicorn>=0.30
+requests>=2.31
+beautifulsoup4>=4.12
+tzdata
+
+# Base de données durable (Supabase / PostgreSQL)
+psycopg[binary]>=3.2
+
+# Outil de calcul de KIRA (exécuté dans un processus isolé)
+numpy>=2.0
+scipy>=1.13
+sympy>=1.13
+matplotlib>=3.9
