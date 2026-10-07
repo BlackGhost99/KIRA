@@ -26,7 +26,9 @@ Il n'installe aucun moteur IA sur les appareils. SQLite reste un support de dév
 
 1. Exécuter `supabase/migrations/202610070001_memory_vector.sql` dans le SQL Editor Supabase.
    La migration active l'extension `vector`. Les migrations de tables V2 → V3 sont additives et automatiques
-   au démarrage du serveur. Ne pas ouvrir ces tables au rôle anonyme : l'API Render authentifiée est leur point d'accès.
+   au démarrage du serveur. La RLS est activée sur les souvenirs, versions, vecteurs et valeurs persistantes,
+   sans politique de lecture publique : l'API Render authentifiée est leur point d'accès. La connexion Render
+   doit utiliser le rôle propriétaire des tables (ou un rôle de serveur avec BYPASSRLS), jamais la clé `anon`.
 2. Fusionner la PR uniquement après examen du diff et des résultats CI. Le blueprint existant déploie `main`
    automatiquement sur Render ; une fusion peut donc déclencher la mise en ligne.
 3. Choisir le service d'embeddings. Pour du français, le connecteur est préparé pour BGE-M3 multilingue via

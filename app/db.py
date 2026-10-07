@@ -355,6 +355,10 @@ class Database:
             self.run(stmt.replace("{PK}", pk).replace("{BLOB}", blob))
         self._migrate_memories()
         if self.kind == "postgres":
+            # L'API Render utilise le rôle propriétaire des tables. Les rôles de
+            # l'API publique Supabase ne doivent pas lire les souvenirs directement.
+            for table in ("memories", "memory_history", "memory_embeddings", "kv"):
+                self.run(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
             for stmt in POSTGRES_EXTRA:
                 try:
                     self.run(stmt)

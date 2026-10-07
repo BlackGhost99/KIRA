@@ -17,6 +17,7 @@ class PostgresMemoryTests(KiraTestCase):
         url = os.environ["KIRA_TEST_POSTGRES_URL"]
         admin = psycopg.connect(url, autocommit=True)
         schema = "kira_test_" + uuid.uuid4().hex
+        self.schema, self.admin = schema, admin
         admin.execute("CREATE EXTENSION IF NOT EXISTS vector")
         admin.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
         self.addCleanup(admin.close)
@@ -78,3 +79,21 @@ class PostgresMemoryTests(KiraTestCase):
         memory.delete(newer["id"])
         self.assertEqual(memory.history(newer["id"]), [])
         self.assertIsNone(db.get_db().q1("SELECT * FROM memory_embeddings WHERE memory_id = ?", [newer["id"]]))
+
+    def test_public_database_role_cannot_read_private_memory_or_identity(self):
+        from psycopg import sql
+        role = "kira_reader_" + uuid.uuid4().hex
+        self.admin.execute(sql.SQL("CREATE ROLE {}").format(sql.Identifier(role)))
+        def remove_role():
+            self.admin.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(role)))
+            self.admin.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(role)))
+        self.addCleanup(remove_role)
+        self.admin.execute(sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(sql.Identifier(self.schema), sql.Identifier(role)))
+        self.admin.execute(sql.SQL("GRANT SELECT ON ALL TABLES IN SCHEMA {} TO {}").format(sql.Identifier(self.schema), sql.Identifier(role)))
+        memory.add("profile", "souvenir privé")
+        memory.identity()
+        self.assertGreater(len(db.get_db().q("SELECT * FROM memories")), 0)
+        with db.get_db().transaction():
+            db.get_db()._conn().execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(role)))
+            for table in ("memories", "memory_history", "memory_embeddings", "kv"):
+                self.assertEqual(db.get_db().q(f"SELECT * FROM {table}"), [])
