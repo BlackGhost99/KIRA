@@ -17,3 +17,31 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Suite de tests
         run: python -m unittest discover -s tests -t . -v
+
+  memory-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: kira_test
+          POSTGRES_PASSWORD: kira_test
+          POSTGRES_DB: kira_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kira_test -d kira_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Migration V2 et recherche hybride sur PostgreSQL réel
+        env:
+          KIRA_TEST_POSTGRES_URL: postgresql://kira_test:kira_test@localhost:5432/kira_test
+        run: python -m unittest tests.test_memory_postgres -v

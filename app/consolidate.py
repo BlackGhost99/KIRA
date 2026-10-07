@@ -17,7 +17,11 @@ _PROMPT = """Voici les échanges récents entre {owner} et son assistant KIRA, p
 
 Extrais au plus 8 éléments NOUVEAUX et durables : niveau dans une matière, lacunes constatées, objectifs, préférences \
 d'apprentissage, projets en cours, faits personnels utiles. Ignore les détails passagers et ce qui est déjà connu.
-Réponds en JSON : {{"items": [{{"kind": "profile" ou "fact", "content": "une phrase claire et autonome"}}]}}
+Utilise profile pour une préférence personnelle, project pour l'état d'un projet, goal pour un objectif, \
+episodic pour un événement important, procedural pour une méthode, experience pour un essai et son résultat, \
+relationship pour une relation, fact pour un fait. Ne change pas l'identité de KIRA. \
+N'invente aucun souvenir et ne déduis pas qu'un ancien fait est devenu faux.
+Réponds en JSON : {{"items": [{{"kind": "profile", "content": "une phrase claire et autonome"}}]}}
 
 Déjà connu :
 {known}
@@ -50,7 +54,8 @@ def consolidate(hours: int = 24) -> dict:
     for it in items[:8]:
         if isinstance(it, dict) and isinstance(it.get("content"), str) and it["content"].strip():
             before = memory.counts()
-            memory.add(it.get("kind") if it.get("kind") in ("profile", "fact") else "fact", it["content"], source="consolidation")
+            allowed = tuple(k for k in memory.KINDS if k not in ("identity", "knowledge"))
+            memory.add(it.get("kind") if it.get("kind") in allowed else "fact", it["content"], source="consolidation")
             added += 1 if memory.counts() != before else 0
     audit.log("consolidation", {"added": added, "candidates": len(items)})
     return {"added": added, "candidates": len(items)}

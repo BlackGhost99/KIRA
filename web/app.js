@@ -670,17 +670,23 @@
   const fresh = (key) => { const n = (seqs[key] = (seqs[key] || 0) + 1); return () => seqs[key] === n; };
 
   // ================= mémoire =================
-  const KIND_LABEL = { profile: "Sur toi", fact: "Fait", knowledge: "Appris", note: "Note" };
-  const KIND_TABS = [["", "Tout"], ["profile", "Sur toi"], ["fact", "Faits"], ["knowledge", "Appris"], ["note", "Notes"]];
+  const KIND_LABEL = { profile: "Sur toi", fact: "Fait", knowledge: "Appris", note: "Note", identity: "Identité de KIRA", episodic: "Événement", procedural: "Méthode", project: "Projet", goal: "Objectif", experience: "Expérience", relationship: "Relation" };
+  const KIND_TABS = [["", "Tout"], ...Object.entries(KIND_LABEL)];
+  $("#memory-status").addEventListener("change", () => loadMemory());
 
   const loadMemory = guard(async () => {
     const q = $("#memory-q").value.trim();
     const params = new URLSearchParams();
     if (state.memKind) params.set("kind", state.memKind);
     if (q) params.set("q", q);
+    params.set("status", $("#memory-status").value);
     const isFresh = fresh("memory");
     const data = await api("/api/memory?" + params);
     if (!isFresh()) return;
+    const semantic = data.semantic || {};
+    $("#memory-search-status").textContent = semantic.configured && semantic.pgvector
+      ? `Recherche par sens configurée · ${semantic.indexed || 0} souvenirs indexés · mots en secours`
+      : "Recherche par mots · la recherche par sens attend son activation cloud";
     const total = Object.values(data.counts).reduce((a, b) => a + b, 0);
     $("#memory-kinds").replaceChildren(...KIND_TABS.map(([k, label]) => {
       const n = k ? data.counts[k] || 0 : total;
@@ -695,6 +701,16 @@
     const card = h("article", { class: "item", "data-id": it.id });
     const view = () => {
       const tools = h("div", { class: "tools tight" },
+        h("button", { type: "button", class: "btn ghost small", on: { click: guard(async () => {
+          const data = await api(`/api/memory/${it.id}/history`);
+          const versions = h("div", { class: "memory-history" }, data.items.map(v => h("div", { class: "item" },
+            h("div", { class: "meta" }, `Version ${v.version} · ${relTime(v.updated_at)} · ${v.status}`), h("p", {}, v.content))));
+          card.replaceChildren(versions, h("button", { type: "button", class: "btn small", on: { click: view } }, "Retour"));
+        }) } }, "Historique"),
+        it.status !== "superseded" ? h("button", { type: "button", class: "btn ghost small", on: { click: guard(async () => {
+          Object.assign(it, await api(`/api/memory/${it.id}`, { method: "PATCH", body: { status: it.status === "archived" ? "active" : "archived" } }));
+          await loadMemory();
+        }) } }, it.status === "archived" ? "Réactiver" : "Archiver") : null,
         h("span", { class: "spacer" }),
         h("button", { type: "button", class: "icon-btn", "aria-label": "Modifier", on: { click: edit } }, icon("edit")),
         armed(h("button", { type: "button", class: "icon-btn danger", "aria-label": "Effacer" }, icon("trash")), "Effacer ?", guard(async () => {
@@ -703,6 +719,8 @@
           setTimeout(() => { card.remove(); loadMemory(); refreshStatus(); }, 220);
         })));
       const meta = h("div", { class: "meta" }, h("span", { class: "kind" }, KIND_LABEL[it.kind] || it.kind),
+        h("span", {}, `v${it.version || 1}`),
+        it.superseded_by ? h("span", {}, `Remplacé par le souvenir #${it.superseded_by}`) : null,
         it.tags ? h("span", {}, it.tags) : null, h("span", {}, relTime(it.created_at)),
         /^https?:\/\//.test(it.source || "") ? h("a", { href: it.source, target: "_blank", rel: "noopener noreferrer" }, "source") : (it.source ? h("span", {}, it.source) : null));
       card.replaceChildren(meta, h("div", { class: "body" }, it.content), tools);
@@ -720,8 +738,15 @@
         view();
         toast("C'est corrigé.");
       }) } }, "Enregistrer");
+      const replace = it.status === "active" ? h("button", { type: "button", class: "btn small", on: { click: guard(async () => {
+        const v = ta.value.trim();
+        if (!v) { toast("Un souvenir ne peut pas être vide.", true); return; }
+        await api(`/api/memory/${it.id}/supersede`, { method: "POST", body: { content: v, kind: kind.value } });
+        await loadMemory();
+        toast("Nouvelle information retenue. L'ancienne reste dans l'historique.");
+      }) } }, "Remplacer l'information") : null;
       card.replaceChildren(ta, h("div", { class: "row" }, h("label", { class: "field grow" }, h("span", {}, "Type"), kind),
-        h("div", { class: "actions" }, h("button", { type: "button", class: "btn ghost small", on: { click: view } }, "Annuler"), save)));
+        h("div", { class: "actions" }, h("button", { type: "button", class: "btn ghost small", on: { click: view } }, "Annuler"), replace, save)));
       ta.focus();
     };
     view();
