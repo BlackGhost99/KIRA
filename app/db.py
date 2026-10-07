@@ -10,6 +10,7 @@ import os
 import re
 import sqlite3
 import threading
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Any, Iterable
 
@@ -62,6 +63,20 @@ SCHEMA = [
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL)""",
     "CREATE INDEX IF NOT EXISTS ix_memories_kind ON memories(kind)",
+    """CREATE TABLE IF NOT EXISTS memory_history (
+        id {PK},
+        memory_id BIGINT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+        version INTEGER NOT NULL,
+        snapshot TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE(memory_id, version))""",
+    """CREATE TABLE IF NOT EXISTS memory_embeddings (
+        memory_id BIGINT PRIMARY KEY REFERENCES memories(id) ON DELETE CASCADE,
+        model TEXT NOT NULL,
+        dimensions INTEGER NOT NULL,
+        content_hash TEXT NOT NULL,
+        vector_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL)""",
     """CREATE TABLE IF NOT EXISTS veille_sources (
         id {PK},
         url TEXT NOT NULL UNIQUE,
@@ -179,6 +194,7 @@ class Database:
         self.url = url
         self.kind = "postgres" if re.match(r"^postgres(ql)?(\+\w+)?://", url) else "sqlite"
         self._local = threading.local()
+        self.vector_schema = ""
         if self.kind == "sqlite":
             path = url.split("sqlite:///", 1)[1] if url.startswith("sqlite:///") else url
             self.path = path or "kira.db"
@@ -226,6 +242,8 @@ class Database:
         self._drop()
 
     def _is_conn_error(self, exc: Exception) -> bool:
+        if getattr(self._local, "in_transaction", False):
+            return False  # ne jamais rejouer une écriture partielle hors transaction
         if self.kind != "postgres":
             return False
         try:
@@ -248,6 +266,28 @@ class Database:
         return row
 
     # -- API ---------------------------------------------------------------
+    @contextmanager
+    def transaction(self):
+        """Transaction pour une mutation de souvenir et son historique indivisibles."""
+        conn = self._conn()
+        if getattr(self._local, "in_transaction", False):
+            raise RuntimeError("Transaction imbriquée non prise en charge.")
+        self._local.in_transaction = True
+        try:
+            if self.kind == "postgres":
+                with conn.transaction():
+                    yield
+            else:
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    yield
+                    conn.execute("COMMIT")
+                except BaseException:
+                    conn.execute("ROLLBACK")
+                    raise
+        finally:
+            self._local.in_transaction = False
+
     def q(self, sql: str, params: Iterable[Any] = ()) -> list[dict]:
         """Exécute une requête ; renvoie les lignes (SELECT ou INSERT ... RETURNING)."""
         sql = self._sql(sql)
@@ -313,12 +353,41 @@ class Database:
         blob = "BLOB" if self.kind == "sqlite" else "BYTEA"
         for stmt in SCHEMA:
             self.run(stmt.replace("{PK}", pk).replace("{BLOB}", blob))
+        self._migrate_memories()
         if self.kind == "postgres":
             for stmt in POSTGRES_EXTRA:
                 try:
                     self.run(stmt)
                 except Exception:  # noqa: BLE001 — l'index de recherche est un confort
                     pass
+            ext = self.q1("SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace "
+                          "WHERE e.extname = 'vector'")
+            if ext:
+                # Le nom vient du catalogue, mais on le cite aussi comme identifiant SQL.
+                schema = '"' + ext['nspname'].replace('"', '""') + '"'
+                self.run(f"ALTER TABLE memory_embeddings ADD COLUMN IF NOT EXISTS embedding {schema}.vector")
+                self.vector_schema = schema
+
+    def _migrate_memories(self):
+        """Migration additive et idempotente, y compris pour les bases V2 existantes."""
+        columns = {
+            "importance": "REAL NOT NULL DEFAULT 0.5",
+            "confidence": "REAL NOT NULL DEFAULT 1.0",
+            "status": "TEXT NOT NULL DEFAULT 'active'",
+            "version": "INTEGER NOT NULL DEFAULT 1",
+            "superseded_by": "BIGINT REFERENCES memories(id) ON DELETE SET NULL",
+            "last_used_at": "TEXT",
+            "use_count": "INTEGER NOT NULL DEFAULT 0",
+        }
+        if self.kind == "sqlite":
+            existing = {r['name'] for r in self.q("PRAGMA table_info(memories)")}
+            for name, definition in columns.items():
+                if name not in existing:
+                    self.run(f"ALTER TABLE memories ADD COLUMN {name} {definition}")
+        else:
+            for name, definition in columns.items():
+                self.run(f"ALTER TABLE memories ADD COLUMN IF NOT EXISTS {name} {definition}")
+        self.run("CREATE INDEX IF NOT EXISTS ix_memories_status ON memories(status, kind)")
 
 
 _db: Database | None = None

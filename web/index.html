@@ -128,19 +128,21 @@
     <!-- Mémoire -->
     <section id="view-memory" class="view page" hidden>
       <header class="page-head">
-        <h1>Ce que je sais de toi</h1>
-        <p>Tout ce que je retiens, tu peux le lire, le corriger ou l'effacer.</p>
+        <h1>Ma mémoire</h1>
+        <p>Nos souvenirs, mes repères, tes projets. Tu peux les corriger et retrouver leurs versions.</p>
       </header>
       <div class="toolbar">
         <label class="search"><svg class="ic"><use href="#i-search"/></svg><input id="memory-q" type="search" placeholder="Chercher" aria-label="Chercher dans la mémoire"></label>
         <button class="btn" id="memory-add-btn"><svg class="ic"><use href="#i-plus"/></svg>Ajouter</button>
+        <label class="field"><span>Afficher</span><select id="memory-status"><option value="active">Souvenirs actifs</option><option value="archived">Archives</option><option value="superseded">Informations remplacées</option></select></label>
       </div>
       <div id="memory-kinds" class="seg" role="tablist" aria-label="Types de souvenirs"></div>
+      <p id="memory-search-status" class="meta" aria-live="polite"></p>
       <form id="memory-add" class="card form" hidden>
         <label class="field"><span>Quoi retenir ?</span><textarea id="memory-add-text" rows="3" maxlength="4000" required></textarea></label>
         <div class="row">
           <label class="field grow"><span>Type</span>
-            <select id="memory-add-kind"><option value="profile">Sur toi</option><option value="fact">Fait</option><option value="note">Note</option></select>
+            <select id="memory-add-kind"><option value="profile">Sur toi</option><option value="fact">Fait</option><option value="note">Note</option><option value="identity">Identité de KIRA</option><option value="episodic">Événement</option><option value="procedural">Méthode</option><option value="project">Projet</option><option value="goal">Objectif</option><option value="experience">Expérience</option><option value="relationship">Relation</option></select>
           </label>
           <div class="actions"><button type="button" class="btn ghost" id="memory-add-cancel">Annuler</button><button class="btn primary" type="submit">Retenir</button></div>
         </div>

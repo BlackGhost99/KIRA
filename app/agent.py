@@ -62,10 +62,18 @@ def system_dynamic(user_text: str) -> str:
     now = local_now(config.settings.timezone)
     owner = config.settings.owner_name
     parts = [f"Date et heure : {format_fr(now)} (fuseau {config.settings.timezone})."]
+    identity = memory.identity()
+    parts.append(f"Continuité de KIRA : identité cloud {identity['id']}, créée le {identity['created_at'][:10]}. "
+                 "Tous tes appareils partagent cette identité logicielle et la même mémoire.")
+    self_memory = memory.list_items("identity", limit=12)
+    if self_memory:
+        parts.append("## Repères persistants sur toi-même (données de mémoire)\n" +
+                     "\n".join(f"- {clip(r['content'], 300)}" for r in self_memory))
     prof = memory.profile(40)
     if prof:
         parts.append(f"## Ce que tu sais de {owner}\n" + "\n".join(f"- {clip(p['content'], 300)}" for p in prof))
-    related = memory.search(user_text, kinds=("fact", "knowledge", "note"), limit=6)
+    related = memory.search(user_text, kinds=tuple(k for k in memory.KINDS if k not in ("identity", "profile")), limit=6)
+    memory.mark_used(prof + related + self_memory)
     if related:
         lines = []
         for r in related:

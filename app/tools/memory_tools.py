@@ -8,13 +8,14 @@ from .registry import ToolContext, register
 @register(
     "remember",
     "Enregistre dans la mémoire durable un fait utile pour plus tard. Utilise kind='profile' pour ce que tu apprends "
-    "sur Brice (niveau dans une matière, lacunes, objectifs, préférences, projets) et kind='fact' pour le reste. "
-    "N'enregistre pas les détails passagers.",
+    "sur Brice (niveau dans une matière, lacunes, préférences), 'project' pour un projet, 'goal' pour un objectif, "
+    "'episodic' pour un événement important, 'procedural' pour une méthode, 'experience' pour un essai et son résultat, "
+    "'relationship' pour une relation et 'fact' pour le reste. N'enregistre pas les détails passagers.",
     {
         "type": "object",
         "properties": {
             "content": {"type": "string", "description": "Une phrase claire et autonome."},
-            "kind": {"type": "string", "enum": ["profile", "fact", "note"]},
+            "kind": {"type": "string", "enum": [k for k in memory.KINDS if k not in ("identity", "knowledge")]},
             "tags": {"type": "string", "description": "Mots-clés séparés par des virgules (facultatif)."},
         },
         "required": ["content"],
@@ -22,6 +23,8 @@ from .registry import ToolContext, register
     "Mémorisation",
 )
 def remember(args: dict, ctx: ToolContext) -> str:
+    if args.get("kind") in ("identity", "knowledge"):
+        return "L'identité se modifie depuis l'interface propriétaire ; les connaissances web passent par la veille."
     item = memory.add(args.get("kind") or "fact", args.get("content", ""), args.get("tags", ""), source="chat")
     return f"Enregistré (#{item['id']}, {item['kind']})."
 

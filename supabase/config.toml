@@ -1,0 +1,4 @@
+# L'authentification de cette seule fonction utilise KIRA_EMBEDDING_SECRET.
+# Les clés anon et service_role ne servent pas de jetons d'accès à cet endpoint.
+[functions.kira-embedding]
+verify_jwt = false

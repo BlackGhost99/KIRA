@@ -300,15 +300,19 @@ def h_memory_list(ctx: Ctx):
     q = ctx.query.get("q", "").strip()
     kind = ctx.query.get("kind", "")
     limit = ctx.int_query("limit", 100, 1, 300)
+    status = ctx.query.get("status", "active")
+    if status not in ("active", "archived", "superseded", ""):
+        raise ApiError(400, "État de souvenir invalide.")
     if q:
-        items = memory.search(q, kinds=(kind,) if kind in memory.KINDS else None, limit=limit)
+        items = memory.search(q, kinds=(kind,) if kind in memory.KINDS else None, limit=limit, status=status)
     else:
-        items = memory.list_items(kind if kind in memory.KINDS else "", limit, ctx.int_query("offset", 0))
-    return {"items": items, "counts": memory.counts()}
+        items = memory.list_items(kind if kind in memory.KINDS else "", limit, ctx.int_query("offset", 0), status=status)
+    return {"items": items, "counts": memory.counts(status), "semantic": memory.semantic_status()}
 
 
 def h_memory_create(ctx: Ctx):
-    item = memory.add(ctx.body.get("kind", "note"), ctx.text("content", 4000), str(ctx.body.get("tags", "")), source="manuel")
+    item = memory.add(ctx.body.get("kind", "note"), ctx.text("content", 4000), str(ctx.body.get("tags", "")), source="manuel",
+                      importance=ctx.body.get("importance", 0.5), confidence=ctx.body.get("confidence", 1.0))
     audit.log("memory_added", {"id": item["id"]}, actor="owner")
     return item
 
@@ -322,6 +326,7 @@ def h_memory_patch(ctx: Ctx):
         content=ctx.text("content", 4000) if "content" in ctx.body else None,
         kind=ctx.body.get("kind"),
         tags=str(ctx.body["tags"]) if "tags" in ctx.body else None,
+        importance=ctx.body.get("importance"), confidence=ctx.body.get("confidence"), status=ctx.body.get("status"),
     )
     audit.log("memory_updated", {"id": mid}, actor="owner")
     return item
@@ -333,6 +338,24 @@ def h_memory_delete(ctx: Ctx):
         raise ApiError(404, "Souvenir introuvable.")
     audit.log("memory_deleted", {"id": mid}, actor="owner")
     return {"ok": True}
+
+
+def h_memory_history(ctx: Ctx):
+    mid = ctx.id()
+    if not memory.get(mid):
+        raise ApiError(404, "Souvenir introuvable.")
+    return {"items": memory.history(mid)}
+
+
+def h_memory_supersede(ctx: Ctx):
+    mid = ctx.id()
+    if not memory.get(mid):
+        raise ApiError(404, "Souvenir introuvable.")
+    return memory.supersede(mid, ctx.text("content", 4000), kind=ctx.body.get("kind"))
+
+
+def h_identity(ctx: Ctx):
+    return {"identity": memory.identity(), "items": memory.list_items("identity", limit=40)}
 
 
 # -- veille --------------------------------------------------------------
@@ -576,6 +599,8 @@ def h_export(ctx: Ctx):
         "conversations": db.q("SELECT * FROM conversations ORDER BY created_at"),
         "messages": db.q("SELECT id, conversation_id, role, content, feedback, created_at FROM messages ORDER BY id"),
         "memories": db.q("SELECT * FROM memories ORDER BY id"),
+        "memory_history": db.q("SELECT * FROM memory_history ORDER BY memory_id, version"),
+        "identity": memory.identity(),
         "veille_sources": db.q("SELECT * FROM veille_sources ORDER BY id"),
         "veille_items": db.q("SELECT * FROM veille_items ORDER BY id"),
         "proposals": db.q("SELECT id, title, rationale, diff, status, pr_url, created_at FROM proposals ORDER BY id"),
@@ -598,6 +623,8 @@ def _daily() -> dict:
         result["consolidation"] = consolidate.consolidate()
     except Exception as exc:  # noqa: BLE001
         result["consolidation"] = {"error": f"{type(exc).__name__}: {exc}"[:200]}
+    if memory.semantic_status()["configured"]:
+        result["memory_index"] = memory.backfill(20)
     return result
 
 
@@ -632,6 +659,9 @@ def routes() -> list[Route]:
         r("/api/messages/{id:int}/feedback", h_feedback, ["POST"]),
         r("/api/memory", h_memory_list, ["GET"]),
         r("/api/memory", h_memory_create, ["POST"]),
+        r("/api/identity", h_identity, ["GET"]),
+        r("/api/memory/{id:int}/history", h_memory_history, ["GET"]),
+        r("/api/memory/{id:int}/supersede", h_memory_supersede, ["POST"]),
         r("/api/memory/{id:int}", h_memory_patch, ["PATCH"]),
         r("/api/memory/{id:int}", h_memory_delete, ["DELETE"]),
         r("/api/veille/items", h_veille_items, ["GET"]),

@@ -49,6 +49,14 @@ class Settings:
     # Base de données : sqlite:///kira.db (local) ou l'adresse Supabase (Session pooler)
     database_url: str = "sqlite:///kira.db"
 
+    # Embeddings en ligne : endpoint dédié, désactivé tant qu'il n'est pas configuré.
+    embedding_url: str = ""
+    embedding_api_key: str = ""
+    embedding_model: str = "@cf/baai/bge-m3"
+    embedding_dimensions: int = 1024
+    embedding_timeout: int = 5
+    memory_semantic_threshold: float = 0.65
+
     # Fournisseurs d'IA (ordre de priorité, bascule automatique en cas de panne)
     llm_priority: str = "anthropic,openai,deepseek,groq,ollama"
     anthropic_api_key: str = ""
@@ -97,6 +105,12 @@ class Settings:
             cron_token=_s("CRON_TOKEN"),
             session_days=_i("SESSION_DAYS", 30),
             database_url=_s("DATABASE_URL", "sqlite:///kira.db"),
+            embedding_url=_s("EMBEDDING_URL"),
+            embedding_api_key=_s("EMBEDDING_API_KEY"),
+            embedding_model=_s("EMBEDDING_MODEL", "@cf/baai/bge-m3"),
+            embedding_dimensions=_i("EMBEDDING_DIMENSIONS", 1024),
+            embedding_timeout=_i("EMBEDDING_TIMEOUT", 5),
+            memory_semantic_threshold=_f("MEMORY_SEMANTIC_THRESHOLD", 0.65),
             llm_priority=_s("LLM_PRIORITY", "anthropic,openai,deepseek,groq,ollama"),
             anthropic_api_key=_s("ANTHROPIC_API_KEY"),
             anthropic_model=_s("ANTHROPIC_MODEL", "claude-sonnet-5-5"),

@@ -4,6 +4,8 @@ import base64
 import json
 import time
 import unittest
+from datetime import datetime, timezone
+from unittest import mock
 
 from app import audit, auth, config, db, evolution, jobs, memory, veille
 from app.llm.base import LLMError
@@ -203,8 +205,11 @@ class StatusTests(ApiTestCase):
         self.assertIn("python", s["tools"])
         self.assertFalse(s["github"])
         memory.add("profile", "Brice veut comprendre la relativité")
-        b = self.api("GET", "/api/briefing").json()
-        self.assertTrue(b["greeting"].endswith("Brice"))
+        for hour, expected in ((2, "Encore debout, Brice ?"), (10, "Bonjour Brice"),
+                               (15, "Bon après-midi Brice"), (20, "Bonsoir Brice")):
+            with self.subTest(hour=hour), mock.patch("app.briefing.local_now", return_value=datetime(2026, 10, 7, hour, tzinfo=timezone.utc)):
+                b = self.api("GET", "/api/briefing").json()
+                self.assertEqual(b["greeting"], expected)
         self.assertEqual(b["known"], 1)
         self.assertTrue(any("relativité" in x for x in b["suggestions"]))
         self.assertLessEqual(len(b["suggestions"]), 4)

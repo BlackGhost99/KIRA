@@ -182,3 +182,8 @@ legacy/         l'ancien KIRA v1, conservé pour mémoire
 - Les modèles DeepSeek, Groq et Ollama ne savent pas lire les images : si KIRA passe sur l'un d'eux, elle peut agir sur ta
   machine mais ne verra pas une capture d'écran (elle te le dira).
 - Un modèle local de secours (Ollama) n'est utile que si tu l'héberges toi-même ailleurs (`OLLAMA_URL`).
+# Évolution en préparation : mémoire V3
+
+Le premier lot V3 ajoute une mémoire hybride cloud, un historique non destructif,
+des archives et une identité persistante commune aux appareils. Son activation,
+ses tests et ses limites sont décrits dans [docs/memory-v3.md](docs/memory-v3.md).
