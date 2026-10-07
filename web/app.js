@@ -98,7 +98,7 @@
 
   // ================= état et API =================
   const state = {
-    token: store.get("kira_token") || "",
+    authenticated: false,
     name: "",
     view: "chat",
     convId: null,
@@ -113,8 +113,85 @@
     bound: false,
   };
 
+  store.del("kira_token"); // migration : aucun secret dans le stockage JavaScript
+
   class ApiError extends Error {
     constructor(message, status) { super(message); this.status = status; }
+  }
+
+  let refreshPromise = null;
+  let reauthPromise = null;
+
+  async function renewSession() {
+    if (!refreshPromise) {
+      const rotate = async () => {
+        const ctl = new AbortController();
+        const timeout = setTimeout(() => ctl.abort(), 90000);
+        try {
+        // Un autre onglet peut avoir renouvelé les cookies pendant l'attente du verrou.
+        const current = await fetch("/api/auth/me", { credentials: "same-origin", signal: ctl.signal });
+        if (current.ok) return true;
+        const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "same-origin", signal: ctl.signal, headers: { "X-KIRA-CSRF": "1" } });
+        return res.ok;
+        } finally { clearTimeout(timeout); }
+      };
+      refreshPromise = (navigator.locks ? navigator.locks.request("kira-session-refresh", rotate) : rotate())
+        .finally(() => { refreshPromise = null; });
+    }
+    return refreshPromise;
+  }
+
+  function confirmPassword() {
+    if (reauthPromise) return reauthPromise;
+    reauthPromise = new Promise((resolve) => {
+      const dialog = $("#auth-reauth");
+      const form = $("form", dialog);
+      const input = $("input", dialog);
+      const error = $(".reauth-error", dialog);
+      const finish = (ok) => {
+        input.value = "";
+        form.removeEventListener("submit", submit);
+        dialog.removeEventListener("cancel", cancel);
+        $(".reauth-cancel", dialog).removeEventListener("click", cancel);
+        dialog.close();
+        resolve(ok);
+      };
+      const cancel = (e) => { e.preventDefault(); finish(false); };
+      const submit = async (e) => {
+        e.preventDefault();
+        const button = $("button[type=submit]", form);
+        button.disabled = true;
+        try {
+          const res = await authedFetch("/api/auth/reauth", { method: "POST", body: JSON.stringify({ password: input.value }) });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) { error.textContent = data.error || "Confirmation impossible."; input.value = ""; input.focus(); }
+          else finish(true);
+        } catch (err) { error.textContent = "Impossible de joindre KIRA."; }
+        finally { button.disabled = false; }
+      };
+      error.textContent = "";
+      form.addEventListener("submit", submit);
+      dialog.addEventListener("cancel", cancel);
+      $(".reauth-cancel", dialog).addEventListener("click", cancel);
+      dialog.showModal();
+      input.focus();
+    }).finally(() => { reauthPromise = null; });
+    return reauthPromise;
+  }
+
+  async function authedFetch(path, opts = {}) {
+    const options = { ...opts, credentials: "same-origin", headers: { "X-KIRA-CSRF": "1", ...(opts.body !== undefined ? { "Content-Type": "application/json" } : {}), ...opts.headers } };
+    let res = await fetch(path, options);
+    const authAction = ["/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/auth/reauth"].includes(path);
+    if (res.status === 401 && !authAction) {
+      if (await renewSession()) res = await fetch(path, options);
+      if (res.status === 401) { logout("Ta session a expiré. Reconnecte-toi."); throw new ApiError("Session expirée.", 401); }
+    }
+    if (res.status === 428 && !authAction) {
+      if (!await confirmPassword()) throw new ApiError("Action annulée.", 428);
+      res = await fetch(path, options);
+    }
+    return res;
   }
 
   async function api(path, opts = {}) {
@@ -123,16 +200,16 @@
     const timer = setTimeout(() => ctl.abort(), timeout);
     let res;
     try {
-      res = await fetch(path, {
+      res = await authedFetch(path, {
         method,
         signal: ctl.signal,
         headers: {
-          ...(state.token ? { Authorization: "Bearer " + state.token } : {}),
           ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
       });
     } catch (e) {
+      if (e instanceof ApiError) throw e;
       throw new ApiError("Impossible de joindre KIRA. Vérifie ta connexion.", 0);
     } finally {
       clearTimeout(timer);
@@ -191,7 +268,7 @@
     }
   }
 
-  // Les graphiques et les captures d'écran sont privés : on les charge avec le jeton, puis on les montre via un lien local.
+  // Les graphiques et les captures d'écran sont privés : on les charge avec les cookies de session, puis on les montre via un lien local.
   const blobCache = new Map();
   function protectedImage(path) {
     if (!blobCache.has(path)) {
@@ -281,11 +358,12 @@
   }
 
   function logout(message) {
+    if ($("#auth-reauth").open) $("#auth-reauth").dispatchEvent(new Event("cancel", { cancelable: true }));
     clearImages();
     $("#tray").replaceChildren();
     show($("#tray"), false);
     store.del("kira_token");
-    state.token = "";
+    state.authenticated = false;
     state.convId = null;
     state.briefing = null;
     showLogin(message || "");
@@ -300,8 +378,8 @@
       $("#splash-text").textContent = "KIRA se réveille… l'hébergement gratuit peut mettre jusqu'à une minute.";
     }, 3500);
     try {
-      if (!state.token) return showLogin();
       const me = await api("/api/auth/me");
+      state.authenticated = true;
       state.name = me.name;
       enterApp();
     } catch (e) {
@@ -321,12 +399,12 @@
     btn.disabled = true;
     $("#login-error").textContent = "";
     try {
-      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: $("#login-password").value }) });
+      const res = await authedFetch("/api/auth/login", { method: "POST", body: JSON.stringify({ password: $("#login-password").value }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Connexion impossible.");
-      state.token = data.token;
+      state.authenticated = true;
       state.name = data.name;
-      store.set("kira_token", data.token);
+      $("#login-password").value = "";
       enterApp();
     } catch (err) {
       $("#login-error").textContent = err instanceof TypeError ? "Impossible de joindre KIRA. Vérifie ta connexion." : err.message;
@@ -534,12 +612,13 @@
   async function streamChat(body, onEvent) {
     let res;
     try {
-      res = await fetch("/api/chat", {
+      res = await authedFetch("/api/chat", {
         method: "POST",
-        headers: { Authorization: "Bearer " + state.token, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
     } catch (e) {
+      if (e instanceof ApiError) throw e;
       throw new ApiError("Impossible de joindre KIRA. Vérifie ta connexion.", 0);
     }
     if (res.status === 401) { logout("Ta session a expiré. Reconnecte-toi."); throw new ApiError("Session expirée.", 401); }
@@ -988,11 +1067,17 @@
       h("p", { class: "hint" }, "Si l'un tombe en panne, je passe automatiquement au suivant."));
     for (const p of s.providers) {
       const led = h("i", { class: "led " + (p.configured ? (p.cooldown_s ? "warn" : "ok") : "") });
-      root.append(kv(p.name, [led, p.configured ? (p.cooldown_s ? `en pause (${p.cooldown_s} s)` : p.model) : "non configuré"]));
+      root.append(kv(p.name, [led, p.configured ? (p.disabled ? "configuration à corriger" : p.cooldown_s ? `en pause (${p.cooldown_s} s)` : `${p.model} · ${p.cost_class === "free" ? "gratuit" : p.cost_class === "paid" ? "payant" : "hébergé par toi"}`) : "non configuré"]));
     }
-    const pct = Math.min(100, Math.round((s.budget.used / Math.max(1, s.budget.limit)) * 100));
+    const modeSelect = h("select", { "aria-label": "Mode des fournisseurs", on: { change: guard(async (e) => {
+      await api("/api/settings/routing", { method: "POST", body: { mode: e.target.value } });
+      await refreshStatus();
+    }) } }, [["QUALITY", "Qualité"], ["ECONOMY", "Économie"], ["PRIVATE", "Fournisseurs autorisés"]].map(([value, label]) => h("option", { value }, label)));
+    modeSelect.value = s.routing_mode;
+    root.append(kv("Mode", modeSelect), h("p", { class: "hint" }, "Économie privilégie les comptes gratuits. Fournisseurs autorisés limite les réponses aux services que tu as approuvés dans la configuration."));
+    const pct = Math.min(100, Math.round((s.budget.paid_used / Math.max(1, s.budget.limit)) * 100));
     root.append(h("h3", { class: "sub-h" }, "Aujourd'hui"),
-      h("div", { class: "kv" }, h("span", { class: "k" }, "Réflexion utilisée"), h("span", { class: "v" }, `${s.budget.used.toLocaleString("fr-FR")} / ${s.budget.limit.toLocaleString("fr-FR")} jetons`)),
+      h("div", { class: "kv" }, h("span", { class: "k" }, "Budget payant utilisé"), h("span", { class: "v" }, `${s.budget.paid_used.toLocaleString("fr-FR")} / ${s.budget.limit.toLocaleString("fr-FR")} jetons`)),
       h("div", { class: "meter" + (pct > 80 ? " high" : ""), role: "progressbar", "aria-valuenow": String(pct), "aria-valuemin": "0", "aria-valuemax": "100" }, h("i", { style: `width:${pct}%` })));
 
     root.append(h("h3", { class: "sub-h" }, "Mon installation"),
@@ -1010,8 +1095,20 @@
     if (!window.matchMedia("(display-mode: standalone)").matches) {
       actions.append(h("button", { type: "button", class: "btn", on: { click: installApp } }, icon("download"), "Installer sur l'écran d'accueil"));
     }
-    actions.append(h("button", { type: "button", class: "btn ghost", on: { click: () => logout("") } }, icon("logout"), "Se déconnecter"));
+    actions.append(h("button", { type: "button", class: "btn ghost", on: { click: guard(async () => { await api("/api/auth/logout", { method: "POST" }); logout(""); }) } }, icon("logout"), "Se déconnecter"));
     root.append(actions);
+    const sessionsRoot = h("div", {}, h("p", { class: "hint" }, "Chargement des sessions…"));
+    root.append(h("h3", { class: "sub-h" }, "Sessions connectées"), sessionsRoot);
+    api("/api/auth/sessions").then((data) => {
+      sessionsRoot.replaceChildren(...data.sessions.map((session) => {
+        const button = h("button", { type: "button", class: "btn ghost small" }, "Révoquer");
+        armed(button, "Confirmer", guard(async () => {
+          await api("/api/auth/sessions/" + encodeURIComponent(session.id), { method: "DELETE" });
+          if (session.current) logout(""); else renderSettings();
+        }));
+        return kv(session.current ? "Cet appareil" : session.user_agent || "Autre appareil", button);
+      }));
+    }).catch(() => { sessionsRoot.replaceChildren(h("p", { class: "hint" }, "Sessions indisponibles.")); });
 
     const journal = h("div", {});
     const journalBtn = h("button", { type: "button", class: "btn ghost small", style: "margin-top:14px", on: { click: guard(async () => {
@@ -1068,7 +1165,7 @@
   }
 
   async function pollPending() {
-    if (!state.token) return;
+    if (!state.authenticated) return;
     const d = state.status && state.status.devices;
     if (!document.hidden && d && d.total > 0) {
       try {
@@ -1080,7 +1177,7 @@
         }
       } catch (e) { /* silencieux : on réessaiera */ }
     }
-    if (state.token) schedulePending();
+    if (state.authenticated) schedulePending();
   }
 
   function renderTray(actions) {
@@ -1307,7 +1404,7 @@
     clearInterval(pair.timer);
     const until = Date.now() + (res.expires_in || 600) * 1000;
     pair.timer = setInterval(async () => {
-      if (Date.now() > until || !state.token) return closePair();
+      if (Date.now() > until || !state.authenticated) return closePair();
       try {
         const data = await api("/api/devices");
         const added = data.devices.find((d) => !pair.known.has(d.id));
@@ -1413,7 +1510,7 @@
     }));
 
     // retour au premier plan : actualise l'état
-    document.addEventListener("visibilitychange", () => { if (!document.hidden && state.token) { refreshStatus(); schedulePending(300); if (!state.convId) loadBriefing(); } });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden && state.authenticated) { refreshStatus(); schedulePending(300); if (!state.convId) loadBriefing(); } });
   }
 
   boot();

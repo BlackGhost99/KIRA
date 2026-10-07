@@ -1,4 +1,4 @@
-"""API HTTP de KIRA (Starlette). Tout est protégé par le jeton du propriétaire, sauf /api/auth/login."""
+"""API HTTP de KIRA (Starlette). Sessions du propriétaire, accès machine et tâches planifiées séparés."""
 from __future__ import annotations
 
 import hashlib
@@ -32,6 +32,7 @@ class Ctx:
         self.body = body
         self.path = request.path_params
         self.query = dict(request.query_params)
+        self.owner_session: dict | None = None
         self.device: dict | None = None  # renseigné pour les routes de la machine (access="device")
 
     def int_query(self, name: str, default: int, low: int = 0, high: int = 1000) -> int:
@@ -63,9 +64,33 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else "inconnu"
 
 
+def _csrf(request: Request) -> None:
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return
+    if request.headers.get("x-kira-csrf") != "1":
+        raise ApiError(403, "En-tête de sécurité requis.")
+    origin = request.headers.get("origin")
+    expected = config.settings.public_origin.rstrip("/") or str(request.base_url).rstrip("/")
+    if origin and origin != expected:
+        raise ApiError(403, "Origine refusée.")
+    if request.headers.get("sec-fetch-site") == "cross-site":
+        raise ApiError(403, "Origine refusée.")
+
+
 def _is_owner(request: Request) -> bool:
     header = request.headers.get("authorization", "")
-    return header.lower().startswith("bearer ") and auth.verify_token(header[7:].strip()) is not None
+    bearer = header.lower().startswith("bearer ")
+    token = header[7:].strip() if bearer else request.cookies.get(auth.ACCESS_COOKIE, "")
+    session = auth.authenticate_access(token)
+    if session:
+        request.state.owner_session = session
+        if not bearer:
+            _csrf(request)
+        return True
+    if bearer and config.settings.allow_legacy_bearer:
+        payload = auth.verify_token(token)
+        return bool(payload and payload.get("sub") == "owner")
+    return False
 
 
 def _require_owner(request: Request) -> None:
@@ -74,9 +99,14 @@ def _require_owner(request: Request) -> None:
 
 
 def _require_cron(request: Request) -> None:
-    if _is_owner(request) or auth.check_cron_token(request.headers.get("x-cron-token", "")):
+    if auth.check_cron_token(request.headers.get("x-cron-token", "")) or _is_owner(request):
         return
     raise ApiError(401, "Jeton de tâche planifiée invalide.")
+
+
+def _require_recent(ctx: Ctx) -> None:
+    if not auth.recent_confirmation(ctx.owner_session):
+        raise ApiError(428, "Confirmez votre mot de passe pour cette action.")
 
 
 def _require_device(request: Request) -> dict:
@@ -110,9 +140,9 @@ def endpoint(fn: Callable[[Ctx], object], access: str = "owner", body_limit: int
         try:
             device = None
             if access == "owner":
-                _require_owner(request)
+                await run_in_threadpool(_require_owner, request)
             elif access == "cron":
-                _require_cron(request)
+                await run_in_threadpool(_require_cron, request)
             elif access == "device":
                 device = await run_in_threadpool(_require_device, request)  # lit la base : hors de la boucle d'événements
             body: dict = {}
@@ -127,6 +157,7 @@ def endpoint(fn: Callable[[Ctx], object], access: str = "owner", body_limit: int
                         raise ApiError(400, "Un objet JSON est attendu.")
             ctx = Ctx(request, body)
             ctx.device = device
+            ctx.owner_session = getattr(request.state, "owner_session", None)
             result = await run_in_threadpool(fn, ctx)
             return result if isinstance(result, Response) else JSONResponse(result)
         except ApiError as exc:
@@ -147,19 +178,95 @@ _global_throttle = auth.LoginThrottle(max_failures=25, window=300)
 
 # -- authentification ----------------------------------------------------
 def h_login(ctx: Ctx):
+    _csrf(ctx.request)
     ip = client_ip(ctx.request)
     if auth.throttle.blocked(ip) or _global_throttle.blocked("*"):
         raise ApiError(429, "Trop d'essais. Réessayez dans quelques minutes.")
     if not config.settings.owner_password:
         raise ApiError(503, "OWNER_PASSWORD n'est pas configuré sur le serveur.")
-    if not auth.check_password(str(ctx.body.get("password", ""))):
+    if not auth.check_password(ctx.text("password", 1000)):
         auth.throttle.fail(ip)
         _global_throttle.fail("*")
         audit.log("login_failed", {"ip": ip})
         raise ApiError(401, "Mot de passe incorrect.")
     auth.throttle.ok(ip)
     audit.log("login", {"ip": ip}, actor="owner")
-    return {"token": auth.make_token(), "name": config.settings.owner_name}
+    session, access, refresh = auth.create_session(ctx.request.headers.get("user-agent", ""))
+    return _session_response(session, access, refresh)
+
+
+def _session_response(session: dict, access: str, refresh: str) -> Response:
+    import time
+    response = JSONResponse({"name": config.settings.owner_name})
+    common = {"httponly": True, "secure": config.settings.cookie_secure, "samesite": "strict"}
+    response.set_cookie(auth.ACCESS_COOKIE, access, path="/api", max_age=max(1, int(session["access_expires_at"] - time.time())), **common)
+    response.set_cookie(auth.REFRESH_COOKIE, refresh, path="/api/auth", max_age=max(1, int(session["expires_at"] - time.time())), **common)
+    return response
+
+
+def _clear_session_cookies(response: Response) -> Response:
+    for name, path in ((auth.ACCESS_COOKIE, "/api"), (auth.REFRESH_COOKIE, "/api/auth")):
+        response.delete_cookie(name, path=path, secure=config.settings.cookie_secure, httponly=True, samesite="strict")
+    return response
+
+
+def h_refresh(ctx: Ctx):
+    _csrf(ctx.request)
+    rotated = auth.refresh_session(ctx.request.cookies.get(auth.REFRESH_COOKIE, ""))
+    if not rotated:
+        return _clear_session_cookies(JSONResponse({"error": "Session expirée ou révoquée."}, status_code=401))
+    audit.log("session_refresh", {"id": rotated[0]["id"]}, actor="owner")
+    return _session_response(*rotated)
+
+
+def h_logout(ctx: Ctx):
+    _csrf(ctx.request)
+    auth.revoke_refresh(ctx.request.cookies.get(auth.REFRESH_COOKIE, ""))
+    session = auth.authenticate_access(ctx.request.cookies.get(auth.ACCESS_COOKIE, ""))
+    if session:
+        auth.revoke_session(session["id"])
+    audit.log("logout", {}, actor="owner")
+    return _clear_session_cookies(JSONResponse({"ok": True}))
+
+
+def h_sessions(ctx: Ctx):
+    return {"sessions": auth.list_sessions(ctx.owner_session["id"] if ctx.owner_session else "")}
+
+
+def h_session_revoke(ctx: Ctx):
+    if not ctx.owner_session or ctx.path["id"] != ctx.owner_session["id"]:
+        _require_recent(ctx)
+    auth.revoke_session(ctx.path["id"])
+    audit.log("session_revoke", {"id": ctx.path["id"]}, actor="owner")
+    response = JSONResponse({"ok": True})
+    return _clear_session_cookies(response) if ctx.owner_session and ctx.path["id"] == ctx.owner_session["id"] else response
+
+
+def h_reauth(ctx: Ctx):
+    ip = client_ip(ctx.request)
+    if auth.throttle.blocked(ip) or _global_throttle.blocked("*"):
+        raise ApiError(429, "Trop d'essais. Réessayez dans quelques minutes.")
+    if not auth.check_password(ctx.text("password", 1000)):
+        auth.throttle.fail(ip)
+        _global_throttle.fail("*")
+        audit.log("reauth_failed", {"ip": ip}, actor="owner")
+        raise ApiError(401, "Mot de passe incorrect.")
+    if not ctx.owner_session:
+        raise ApiError(401, "Reconnectez-vous pour confirmer cette action.")
+    auth.confirm_session(ctx.owner_session["id"])
+    audit.log("reauth", {"id": ctx.owner_session["id"]}, actor="owner")
+    auth.throttle.ok(ip)
+    return {"ok": True}
+
+
+def h_routing(ctx: Ctx):
+    from .llm.router import MODES
+    mode = ctx.text("mode", 20).upper()
+    if mode not in MODES:
+        raise ApiError(400, "Mode inconnu.")
+    get_db().kv_set("llm_routing_mode", mode)
+    audit.log("routing_mode", {"mode": mode}, actor="owner")
+    return {"mode": mode}
 
 
 def h_me(ctx: Ctx):
@@ -181,6 +288,7 @@ def h_status(ctx: Ctx):
         "owner": s.owner_name,
         "database": db.kind,
         "providers": get_router().status(),
+        "routing_mode": get_router().mode(),
         "budget": budget.summary(),
         "tools": [t.name for t in tool_specs()],
         "memory": memory.counts(),
@@ -431,6 +539,7 @@ def h_evo_propose(ctx: Ctx):
 
 
 def h_evo_approve(ctx: Ctx):
+    _require_recent(ctx)
     return evolution.approve(ctx.id())
 
 
@@ -464,6 +573,7 @@ def h_devices(ctx: Ctx):
 
 
 def h_device_pair_code(ctx: Ctx):
+    _require_recent(ctx)
     result = devices.create_pair_code()
     if CORE_AGENT.exists():
         result["agent_sha256"] = hashlib.sha256(CORE_AGENT.read_bytes()).hexdigest()
@@ -471,6 +581,10 @@ def h_device_pair_code(ctx: Ctx):
 
 
 def h_device_patch(ctx: Ctx):
+    if "paused" in ctx.body and not isinstance(ctx.body["paused"], bool):
+        raise ApiError(400, "« paused » doit être un booléen.")
+    if "policy" in ctx.body or ctx.body.get("paused") is False:
+        _require_recent(ctx)
     did = _device_id(ctx)
     out = None
     if "name" in ctx.body:
@@ -511,6 +625,7 @@ def h_action_get(ctx: Ctx):
 
 
 def h_action_approve(ctx: Ctx):
+    _require_recent(ctx)
     return devices.approve(ctx.id())
 
 
@@ -519,6 +634,10 @@ def h_action_deny(ctx: Ctx):
 
 
 def h_devices_pause_all(ctx: Ctx):
+    if "paused" in ctx.body and not isinstance(ctx.body["paused"], bool):
+        raise ApiError(400, "« paused » doit être un booléen.")
+    if ctx.body.get("paused") is False:
+        _require_recent(ctx)
     devices.set_global_pause(bool(ctx.body.get("paused", True)))
     return {"paused": devices.global_paused()}
 
@@ -648,6 +767,12 @@ def routes() -> list[Route]:
     return [
         r("/healthz", h_health, ["GET"], "none"),
         r("/api/auth/login", h_login, ["POST"], "none"),
+        r("/api/auth/refresh", h_refresh, ["POST"], "none"),
+        r("/api/auth/logout", h_logout, ["POST"], "none"),
+        r("/api/auth/reauth", h_reauth, ["POST"]),
+        r("/api/auth/sessions", h_sessions, ["GET"]),
+        r("/api/auth/sessions/{id}", h_session_revoke, ["DELETE"]),
+        r("/api/settings/routing", h_routing, ["POST"]),
         r("/api/auth/me", h_me, ["GET"]),
         r("/api/status", h_status, ["GET"]),
         r("/api/briefing", h_briefing, ["GET"]),

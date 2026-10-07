@@ -461,3 +461,6 @@ body.typing .toasts { bottom: 80px; }
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 .tray pre { max-height: 38vh; }  /* un script long se lit en défilant, les boutons restent visibles */
+
+#auth-reauth { max-width: 420px; width: calc(100% - 32px); margin: auto; color: inherit; background: var(--bg); }
+#auth-reauth::backdrop { background: rgba(0, 0, 0, .55); }

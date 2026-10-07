@@ -85,7 +85,8 @@ class AgentTests(KiraTestCase):
         use_router(ScriptedProvider([LLMError("panne totale", 500, "x")]))
         events = run(None, "Y a quelqu'un ?")
         self.assertEqual(events[-1]["type"], "error")
-        self.assertIn("panne totale", events[-1]["message"])
+        self.assertIn("HTTP 500", events[-1]["message"])
+        self.assertNotIn("panne totale", events[-1]["message"])
         self.assertEqual(db.get_db().q1("SELECT COUNT(*) AS n FROM messages")["n"], 1)
 
     def test_empty_message_and_deep_tier(self):

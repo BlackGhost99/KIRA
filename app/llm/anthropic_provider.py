@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from .. import config, net
+from .errors import http_error
 from .base import LLMError, LLMResult, Provider, ToolCall, ToolSpec
 
 URL = "https://api.anthropic.com/v1/messages"
@@ -46,6 +47,11 @@ def convert_messages(messages: list[dict]) -> list[dict]:
 class AnthropicProvider(Provider):
     name = "anthropic"
 
+    def fingerprint(self) -> str:
+        import hashlib
+        s = config.settings
+        return hashlib.sha256(repr((s.anthropic_api_key, s.anthropic_model, s.anthropic_model_fast, s.anthropic_model_deep)).encode()).hexdigest()
+
     def configured(self) -> bool:
         return bool(config.settings.anthropic_api_key)
 
@@ -73,11 +79,21 @@ class AnthropicProvider(Provider):
                 "content-type": "application/json",
             },
             json=body,
-            timeout=(300 if max_tokens > 6000 else 150),
+            allow_redirects=False,
+            timeout=(10, max(5, min(120, config.settings.llm_timeout))),
         )
         if resp.status_code != 200:
-            raise LLMError(f"Anthropic HTTP {resp.status_code} : {resp.text[:300]}", resp.status_code, self.name)
-        data = resp.json()
+            raise http_error(resp, self.name)
+        try:
+            data = resp.json()
+        except ValueError as exc:
+            raise LLMError("anthropic : JSON invalide", provider=self.name) from exc
+        try:
+            return self._parse_response(data, model)
+        except (KeyError, IndexError, TypeError, ValueError, AttributeError) as exc:
+            raise LLMError("anthropic : réponse invalide", provider=self.name) from exc
+
+    def _parse_response(self, data, model) -> LLMResult:
         text_parts: list[str] = []
         calls: list[ToolCall] = []
         for block in data.get("content", []):
@@ -85,6 +101,8 @@ class AnthropicProvider(Provider):
                 text_parts.append(block.get("text", ""))
             elif block.get("type") == "tool_use":
                 calls.append(ToolCall(block["id"], block["name"], block.get("input") or {}))
+        if not text_parts and not calls:
+            raise LLMError("anthropic : réponse vide", provider=self.name)
         usage = data.get("usage", {})
         return LLMResult(
             text="".join(text_parts).strip(),

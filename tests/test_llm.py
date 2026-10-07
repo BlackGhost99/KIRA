@@ -139,12 +139,17 @@ class RouterTests(KiraTestCase):
         self.assertEqual(router.complete([], [{"role": "user", "content": "2"}]).text, "B2")
         self.assertEqual(len(a.calls), 1)
 
-    def test_all_failing_raises_unavailable_but_retries_resting_ones(self):
+    def test_all_failing_waits_for_cooldown_before_retry(self):
         a = ScriptedProvider([LLMError("panne", 500, "a"), "revenu"], name="a")
         router = use_router(a)
         with self.assertRaises(LLMUnavailable):
             router.complete([], [{"role": "user", "content": "x"}])
-        self.assertEqual(router.complete([], [{"role": "user", "content": "x"}]).text, "revenu")
+        with self.assertRaises(LLMUnavailable):
+            router.complete([], [{"role": "user", "content": "x"}])
+        self.assertEqual(len(a.calls), 1)
+        from unittest.mock import patch
+        with patch("app.llm.router.time.time", return_value=router._cool["a"] + 1):
+            self.assertEqual(router.complete([], [{"role": "user", "content": "x"}]).text, "revenu")
 
     def test_priority_setting_orders_providers(self):
         a = ScriptedProvider(["A"], name="anthropic")
