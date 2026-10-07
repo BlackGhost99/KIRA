@@ -114,6 +114,14 @@ class HybridMemoryTests(KiraTestCase):
         self.assertEqual(memory.backfill()["indexed"], 1)
         self.assertEqual(len(memory.search("PC du boulot")), 1)
 
+    def test_older_profile_is_recalled_into_conversation_beyond_recent_profile_window(self):
+        memory.add("profile", "ordinateur professionnel utilisé à l'hôtel")
+        with mock.patch("app.embeddings.embed", return_value=[0.0, 1.0, 0.0]):
+            for i in range(41):
+                memory.add("profile", f"Préférence personnelle numéro {i}")
+        self.assertNotIn("ordinateur", " ".join(r["content"] for r in memory.profile(40)))
+        self.assertIn("ordinateur professionnel", agent.system_dynamic("PC du boulot"))
+
     def test_update_invalidates_embedding_and_failure_keeps_lexical_memory(self):
         item = memory.add("fact", "ordinateur professionnel")
         with mock.patch("app.embeddings.embed", side_effect=embeddings.EmbeddingUnavailable("panne")):

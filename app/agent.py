@@ -72,7 +72,9 @@ def system_dynamic(user_text: str) -> str:
     prof = memory.profile(40)
     if prof:
         parts.append(f"## Ce que tu sais de {owner}\n" + "\n".join(f"- {clip(p['content'], 300)}" for p in prof))
-    related = memory.search(user_text, kinds=tuple(k for k in memory.KINDS if k not in ("identity", "profile")), limit=6)
+    related = memory.search(user_text, kinds=tuple(k for k in memory.KINDS if k != "identity"), limit=12)
+    profile_ids = {p['id'] for p in prof}
+    related = [r for r in related if r['id'] not in profile_ids][:6]
     memory.mark_used(prof + related + self_memory)
     if related:
         lines = []
