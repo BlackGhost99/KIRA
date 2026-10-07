@@ -34,7 +34,7 @@ Un hébergement gratuit efface ses fichiers à chaque redémarrage. Pour que KIR
    - `OWNER_PASSWORD` : ton mot de passe de connexion à KIRA (long, unique).
    - `DATABASE_URL` : l'adresse Supabase de l'étape 1.
    - `ANTHROPIC_API_KEY` : clé sur [console.anthropic.com](https://console.anthropic.com). **Fixe-y une limite de dépense mensuelle.**
-   - Facultatif : `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY` (secours), `TAVILY_API_KEY` (meilleure recherche web).
+   - Facultatif : `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY` (secours), `TAVILY_API_KEY` (meilleure recherche web).
    - `SECRET_KEY` et `CRON_TOKEN` sont générés automatiquement.
 3. Au premier déploiement, ouvre l'adresse `https://….onrender.com`, connecte-toi, et regarde *Plus → Réglages* : les fournisseurs
    configurés ont un voyant vert.
@@ -187,3 +187,5 @@ legacy/         l'ancien KIRA v1, conservé pour mémoire
 Le premier lot V3 ajoute une mémoire hybride cloud, un historique non destructif,
 des archives et une identité persistante commune aux appareils. Son activation,
 ses tests et ses limites sont décrits dans [docs/memory-v3.md](docs/memory-v3.md).
+
+Le [routeur et les sessions V3](docs/router-auth-v3.md) ajoutent les secours gratuits, les modes de routage et les cookies HttpOnly révocables. Les comptes gratuits Gemini/Groq doivent être déclarés explicitement ; la mise à jour impose une nouvelle connexion navigateur.

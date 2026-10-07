@@ -156,10 +156,15 @@ class KiraTestCase(unittest.TestCase):
 
 # -- appel direct de l'application ASGI (sans serveur ni httpx) -------------
 class Reply:
-    def __init__(self, status: int, headers: dict, body: bytes):
+    def __init__(self, status: int, headers: dict, body: bytes, raw_headers=()):
         self.status = status
         self.headers = headers
         self.body = body
+        from http.cookies import SimpleCookie
+        self.cookies = SimpleCookie()
+        for key, value in raw_headers:
+            if key.lower() == b"set-cookie":
+                self.cookies.load(value.decode())
 
     @property
     def text(self) -> str:
@@ -210,4 +215,4 @@ def call(app, method: str, path: str, json_body=None, headers: dict | None = Non
     start = next(m for m in sent if m["type"] == "http.response.start")
     out_headers = {k.decode().lower(): v.decode() for k, v in start["headers"]}
     out_body = b"".join(m.get("body", b"") for m in sent if m["type"] == "http.response.body")
-    return Reply(start["status"], out_headers, out_body)
+    return Reply(start["status"], out_headers, out_body, start["headers"])

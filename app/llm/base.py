@@ -16,6 +16,7 @@ class ToolCall:
     id: str
     name: str
     arguments: dict
+    extra_content: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -30,10 +31,13 @@ class LLMResult:
 
 
 class LLMError(Exception):
-    def __init__(self, message: str, status: int | None = None, provider: str = ""):
+    def __init__(self, message: str, status: int | None = None, provider: str = "",
+                 retry_after: float | None = None, category: str = ""):
         super().__init__(message)
         self.status = status
         self.provider = provider
+        self.retry_after = retry_after
+        self.category = category
 
 
 class LLMUnavailable(Exception):
@@ -57,6 +61,14 @@ class Provider:
     """
 
     name = "base"
+    vision = True
+    supports_tools = True
+
+    def cost_class(self) -> str:
+        return "paid"
+
+    def fingerprint(self) -> str:
+        return self.model_for("default")
 
     def configured(self) -> bool:
         raise NotImplementedError

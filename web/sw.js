@@ -1,5 +1,5 @@
 /* Service worker de KIRA : ouvre l'application même sans réseau. Les données (/api/) ne sont JAMAIS mises en cache. */
-const VERSION = "kira-shell-v3-memory";
+const VERSION = "kira-shell-v3-sessions";
 const SHELL = [
   "/", "/style.css", "/app.js", "/manifest.webmanifest",
   "/vendor/marked.umd.js", "/vendor/purify.min.js", "/vendor/katex.min.js", "/vendor/katex.min.css",

@@ -45,6 +45,11 @@ class Settings:
     secret_key: str = ""
     cron_token: str = ""
     session_days: int = 30
+    access_minutes: int = 15
+    cookie_secure: bool = True
+    public_origin: str = ""
+    allow_legacy_bearer: bool = False
+    reauth_seconds: int = 300
 
     # Base de données : sqlite:///kira.db (local) ou l'adresse Supabase (Session pooler)
     database_url: str = "sqlite:///kira.db"
@@ -58,7 +63,17 @@ class Settings:
     memory_semantic_threshold: float = 0.65
 
     # Fournisseurs d'IA (ordre de priorité, bascule automatique en cas de panne)
-    llm_priority: str = "anthropic,openai,deepseek,groq,ollama"
+    llm_priority: str = "anthropic,openai,deepseek,gemini,groq,openrouter,ollama"
+    llm_routing_mode: str = "QUALITY"
+    llm_economy_allow_paid: bool = False
+    llm_trusted_providers: str = ""
+    llm_timeout: int = 45
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_free_tier: bool = False
+    groq_free_tier: bool = False
+    openrouter_api_key: str = ""
+    openrouter_model: str = "openrouter/free"
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-5-5"
     anthropic_model_fast: str = "claude-haiku-4-5-20251001"
@@ -104,6 +119,11 @@ class Settings:
             secret_key=_s("SECRET_KEY"),
             cron_token=_s("CRON_TOKEN"),
             session_days=_i("SESSION_DAYS", 30),
+            access_minutes=_i("ACCESS_MINUTES", 15),
+            cookie_secure=_b("COOKIE_SECURE", True),
+            public_origin=_s("PUBLIC_ORIGIN", _s("RENDER_EXTERNAL_URL")),
+            allow_legacy_bearer=_b("ALLOW_LEGACY_BEARER", False),
+            reauth_seconds=_i("REAUTH_SECONDS", 300),
             database_url=_s("DATABASE_URL", "sqlite:///kira.db"),
             embedding_url=_s("EMBEDDING_URL"),
             embedding_api_key=_s("EMBEDDING_API_KEY"),
@@ -111,7 +131,17 @@ class Settings:
             embedding_dimensions=_i("EMBEDDING_DIMENSIONS", 1024),
             embedding_timeout=_i("EMBEDDING_TIMEOUT", 5),
             memory_semantic_threshold=_f("MEMORY_SEMANTIC_THRESHOLD", 0.65),
-            llm_priority=_s("LLM_PRIORITY", "anthropic,openai,deepseek,groq,ollama"),
+            llm_priority=_s("LLM_PRIORITY", "anthropic,openai,deepseek,gemini,groq,openrouter,ollama"),
+            llm_routing_mode=_s("LLM_ROUTING_MODE", "QUALITY"),
+            llm_economy_allow_paid=_b("LLM_ECONOMY_ALLOW_PAID", False),
+            llm_trusted_providers=_s("LLM_TRUSTED_PROVIDERS"),
+            llm_timeout=_i("LLM_TIMEOUT", 45),
+            gemini_api_key=_s("GEMINI_API_KEY"),
+            gemini_model=_s("GEMINI_MODEL", "gemini-2.5-flash"),
+            gemini_free_tier=_b("GEMINI_FREE_TIER", False),
+            groq_free_tier=_b("GROQ_FREE_TIER", False),
+            openrouter_api_key=_s("OPENROUTER_API_KEY"),
+            openrouter_model=_s("OPENROUTER_MODEL", "openrouter/free"),
             anthropic_api_key=_s("ANTHROPIC_API_KEY"),
             anthropic_model=_s("ANTHROPIC_MODEL", "claude-sonnet-5-5"),
             anthropic_model_fast=_s("ANTHROPIC_MODEL_FAST", "claude-haiku-4-5-20251001"),

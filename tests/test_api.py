@@ -26,7 +26,7 @@ def wait_jobs(timeout: float = 30):
 class ApiTestCase(KiraTestCase):
     def setUp(self):
         super().setUp()
-        self.token = auth.make_token()
+        self.session, self.token, self.refresh = auth.create_session()
 
     def api(self, method, path, body=None, token="default", **kw):
         headers = dict(kw.pop("headers", {}))
@@ -66,23 +66,24 @@ class AccessTests(ApiTestCase):
                     self.assertEqual(self.api(method, path, {} if method in ("POST", "PATCH") else None, token=token).status, 401)
 
     def test_login_success_failure_and_throttle(self):
-        bad = call(app, "POST", "/api/auth/login", {"password": "faux"})
+        bad = call(app, "POST", "/api/auth/login", {"password": "faux"}, headers={"x-kira-csrf": "1"})
         self.assertEqual(bad.status, 401)
-        ok = call(app, "POST", "/api/auth/login", {"password": "mot-de-passe-test"})
+        ok = call(app, "POST", "/api/auth/login", {"password": "mot-de-passe-test"}, headers={"x-kira-csrf": "1"})
         self.assertEqual(ok.status, 200)
-        token = ok.json()["token"]
+        self.assertNotIn("token", ok.json())
+        token = ok.cookies[auth.ACCESS_COOKIE].value
         self.assertEqual(self.api("GET", "/api/auth/me", token=token).json()["name"], "Brice")
         self.assertIn("login", {e["action"] for e in audit.recent()})
         for _ in range(6):
-            call(app, "POST", "/api/auth/login", {"password": "faux"})
-        blocked = call(app, "POST", "/api/auth/login", {"password": "mot-de-passe-test"})
+            call(app, "POST", "/api/auth/login", {"password": "faux"}, headers={"x-kira-csrf": "1"})
+        blocked = call(app, "POST", "/api/auth/login", {"password": "mot-de-passe-test"}, headers={"x-kira-csrf": "1"})
         self.assertEqual(blocked.status, 429)
         auth.throttle.ok("203.0.113.9")
         auth._global = None
 
     def test_login_without_configured_password(self):
         config.settings.owner_password = ""
-        self.assertEqual(call(app, "POST", "/api/auth/login", {"password": ""}).status, 503)
+        self.assertEqual(call(app, "POST", "/api/auth/login", {"password": ""}, headers={"x-kira-csrf": "1"}).status, 503)
 
     def test_bad_bodies(self):
         self.assertEqual(self.api("POST", "/api/chat", raw_body=b"pas du json").status, 400)

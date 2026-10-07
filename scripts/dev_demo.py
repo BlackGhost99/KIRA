@@ -20,12 +20,13 @@ DATA = Path(tempfile.mkdtemp(prefix="kira_demo_"))
 os.environ.update(
     DATABASE_URL=f"sqlite:///{DATA / 'demo.db'}",
     OWNER_PASSWORD="demo",
+    COOKIE_SECURE="false",
     SECRET_KEY="demo-secret-key-not-for-production",
     CRON_TOKEN="demo-cron",
     OWNER_NAME="Brice",
     TIMEZONE="Africa/Libreville",
 )
-for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "DEEPSEEK_API_KEY", "GROQ_API_KEY", "GITHUB_TOKEN", "TAVILY_API_KEY"):
+for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "DEEPSEEK_API_KEY", "GROQ_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY", "GITHUB_TOKEN", "TAVILY_API_KEY"):
     os.environ.pop(key, None)
 
 from app import db, memory  # noqa: E402

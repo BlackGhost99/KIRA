@@ -141,6 +141,20 @@ SCHEMA = [
         data {BLOB} NOT NULL,
         created_at TEXT NOT NULL)""",
     "CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)",
+    """CREATE TABLE IF NOT EXISTS owner_sessions (
+        id TEXT PRIMARY KEY,
+        access_hash TEXT NOT NULL UNIQUE,
+        refresh_hash TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL,
+        access_expires_at DOUBLE PRECISION NOT NULL,
+        expires_at DOUBLE PRECISION NOT NULL,
+        reauth_at DOUBLE PRECISION NOT NULL,
+        revoked_at TEXT,
+        user_agent TEXT NOT NULL DEFAULT '')""",
+    """CREATE TABLE IF NOT EXISTS owner_refresh_used (
+        token_hash TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL REFERENCES owner_sessions(id) ON DELETE CASCADE,
+        consumed_at DOUBLE PRECISION NOT NULL)""",
     # --- le « cœur » : appareils de Brice, codes d'appairage et file d'actions ---
     """CREATE TABLE IF NOT EXISTS devices (
         id {PK},
@@ -355,9 +369,13 @@ class Database:
             self.run(stmt.replace("{PK}", pk).replace("{BLOB}", blob))
         self._migrate_memories()
         if self.kind == "postgres":
+            self.run("ALTER TABLE llm_usage ADD COLUMN IF NOT EXISTS cost_class TEXT NOT NULL DEFAULT 'paid'")
+        elif 'cost_class' not in {r['name'] for r in self.q("PRAGMA table_info(llm_usage)")}:
+            self.run("ALTER TABLE llm_usage ADD COLUMN cost_class TEXT NOT NULL DEFAULT 'paid'")
+        if self.kind == "postgres":
             # L'API Render utilise le rôle propriétaire des tables. Les rôles de
             # l'API publique Supabase ne doivent pas lire les souvenirs directement.
-            for table in ("memories", "memory_history", "memory_embeddings", "kv"):
+            for table in ("memories", "memory_history", "memory_embeddings", "kv", "owner_sessions", "owner_refresh_used"):
                 self.run(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
             for stmt in POSTGRES_EXTRA:
                 try:

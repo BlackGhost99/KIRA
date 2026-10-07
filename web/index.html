@@ -202,6 +202,16 @@
   </main>
 </div>
 
+<dialog id="auth-reauth" class="card">
+  <form class="stack">
+    <h2>Confirmer cette action</h2>
+    <p>Entre ton mot de passe pour autoriser cette action sensible.</p>
+    <label class="field"><span>Mot de passe</span><input type="password" autocomplete="current-password" required maxlength="1000"></label>
+    <p class="reauth-error hint" role="alert"></p>
+    <div class="row"><button type="button" class="btn ghost reauth-cancel">Annuler</button><button type="submit" class="btn primary">Confirmer</button></div>
+  </form>
+</dialog>
+
 <div id="tray" class="tray" role="region" aria-label="Demandes d'accord" hidden></div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 

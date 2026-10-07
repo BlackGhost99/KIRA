@@ -2,16 +2,18 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from typing import Callable
 
 from .. import config, net
+from .errors import http_error
 from .base import LLMError, LLMResult, Provider, ToolCall, ToolSpec
 
 
 NO_VISION_NOTE = "\n[Une image accompagnait ce résultat, mais ce modèle ne sait pas lire les images : dis-le à Brice si elle était nécessaire.]"
 
 
-def convert_messages(system: list[str], messages: list[dict], vision: bool = False) -> list[dict]:
+def convert_messages(system: list[str], messages: list[dict], vision: bool = False, google: bool = False) -> list[dict]:
     out: list[dict] = []
     sys_text = "\n\n".join(t for t in system if t and t.strip())
     if sys_text:
@@ -43,6 +45,10 @@ def convert_messages(system: list[str], messages: list[dict], vision: bool = Fal
                     }
                     for tc in calls
                 ]
+            if calls and google:
+                for encoded, tc in zip(msg["tool_calls"], calls):
+                    if tc.extra_content:
+                        encoded["extra_content"] = tc.extra_content
             if msg["content"] is None and not calls:
                 continue
             out.append(msg)
@@ -72,6 +78,17 @@ class OpenAICompatProvider(Provider):
         key, base, models, _ = self._cfg()
         return bool(base) and (bool(key) or not self._needs_key) and bool(models.get("default"))
 
+    def cost_class(self) -> str:
+        s = config.settings
+        if self.name == "ollama":
+            return "self_hosted"
+        if self.name == "openrouter" or (self.name == "gemini" and s.gemini_free_tier) or (self.name == "groq" and s.groq_free_tier):
+            return "free"
+        return "paid"
+
+    def fingerprint(self) -> str:
+        return hashlib.sha256(repr(self._cfg()).encode()).hexdigest()
+
     def model_for(self, tier: str) -> str:
         _, _, models, _ = self._cfg()
         return models.get(tier) or models["default"]
@@ -79,8 +96,12 @@ class OpenAICompatProvider(Provider):
     def complete(self, system, messages, tools, tier, max_tokens) -> LLMResult:
         key, base, _, completion_tokens = self._cfg()
         model = self.model_for(tier)
-        body: dict = {"model": model, "messages": convert_messages(system, messages, self.vision)}
+        body: dict = {"model": model, "messages": convert_messages(system, messages, self.vision, google=self.name == "gemini")}
         body["max_completion_tokens" if completion_tokens else "max_tokens"] = max_tokens
+        if self.name == "openrouter":
+            if model != "openrouter/free" and not model.endswith(":free"):
+                raise LLMError("OpenRouter : seul un modèle gratuit est autorisé", 400, self.name, category="configuration")
+            body["provider"] = {"require_parameters": True, "max_price": {"prompt": 0, "completion": 0, "request": 0, "image": 0}}
         if tools:
             body["tools"] = [
                 {"type": "function", "function": {"name": t.name, "description": t.description, "parameters": t.parameters}}
@@ -89,10 +110,19 @@ class OpenAICompatProvider(Provider):
         headers = {"content-type": "application/json"}
         if key:
             headers["authorization"] = f"Bearer {key}"
-        resp = net.session().post(base.rstrip("/") + "/chat/completions", headers=headers, json=body, timeout=(300 if max_tokens > 6000 else 150))
+        resp = net.session().post(base.rstrip("/") + "/chat/completions", headers=headers, json=body, allow_redirects=False, timeout=(10, max(5, min(120, config.settings.llm_timeout))))
         if resp.status_code != 200:
-            raise LLMError(f"{self.name} HTTP {resp.status_code} : {resp.text[:300]}", resp.status_code, self.name)
-        data = resp.json()
+            raise http_error(resp, self.name)
+        try:
+            data = resp.json()
+        except ValueError as exc:
+            raise LLMError(f"{self.name} : JSON invalide", provider=self.name) from exc
+        try:
+            return self._parse_response(data, model)
+        except (KeyError, IndexError, TypeError, ValueError, AttributeError) as exc:
+            raise LLMError(f"{self.name} : réponse invalide", provider=self.name) from exc
+
+    def _parse_response(self, data, model) -> LLMResult:
         try:
             choice = data["choices"][0]
             msg = choice["message"]
@@ -105,7 +135,10 @@ class OpenAICompatProvider(Provider):
                 args = json.loads(fn.get("arguments") or "{}")
             except json.JSONDecodeError:
                 args = {}
-            calls.append(ToolCall(tc.get("id") or f"call_{i}", fn.get("name", ""), args if isinstance(args, dict) else {}))
+            calls.append(ToolCall(tc.get("id") or f"call_{i}", fn.get("name", ""), args if isinstance(args, dict) else {},
+                                  tc.get("extra_content", {}) if self.name == "gemini" else {}))
+        if not isinstance(msg.get("content") or "", str) or (not msg.get("content") and not calls):
+            raise LLMError(f"{self.name} : réponse vide ou invalide", provider=self.name)
         usage = data.get("usage") or {}
         return LLMResult(
             text=(msg.get("content") or "").strip(),
@@ -113,7 +146,7 @@ class OpenAICompatProvider(Provider):
             input_tokens=int(usage.get("prompt_tokens", 0)),
             output_tokens=int(usage.get("completion_tokens", 0)),
             provider=self.name,
-            model=model,
+            model=str(data.get("model") or model)[:200],
             stop_reason=choice.get("finish_reason", ""),
         )
 
@@ -152,3 +185,17 @@ def ollama_provider() -> OpenAICompatProvider:
         return "", base, {"default": s.ollama_model}, False
 
     return OpenAICompatProvider("ollama", cfg, needs_key=False)
+
+
+def gemini_provider() -> OpenAICompatProvider:
+    def cfg():
+        s = config.settings
+        return s.gemini_api_key, "https://generativelanguage.googleapis.com/v1beta/openai", {"default": s.gemini_model}, False
+    return OpenAICompatProvider("gemini", cfg, vision=True)
+
+
+def openrouter_provider() -> OpenAICompatProvider:
+    def cfg():
+        s = config.settings
+        return s.openrouter_api_key, "https://openrouter.ai/api/v1", {"default": s.openrouter_model}, False
+    return OpenAICompatProvider("openrouter", cfg, vision=True)
