@@ -33,7 +33,7 @@ Une fois ces accès disponibles, déployer le commit validé par CI et vérifier
 5. Cliquer **Discuter de ce projet**. La conversation conserve son projet côté serveur lorsqu'elle est rouverte ailleurs. Un nouveau projet choisi ne remplace pas celui d'une conversation existante.
 6. Créer une carte d'apprentissage avec sa réponse et sa source ; révéler la réponse, puis choisir « À revoir » ou « Je maîtrise ».
 7. Dans **Mémoire**, retrouver l'échange d'origine, corriger ou confirmer les déductions. L'option d'inclusion des souvenirs privés utilise la recherche par mots, sans embeddings.
-8. Dans **Plus**, lancer une évaluation puis rouvrir les résultats. Elle effectue au maximum cinq appels LLM, selon le mode et le budget courants.
+8. Dans **Plus**, lancer une évaluation puis rouvrir les résultats. Elle exécute cinq scénarios selon le mode et le budget courants ; chaque scénario peut entraîner plusieurs requêtes en cas de bascule entre fournisseurs.
 9. Dans les réglages, télécharger une **Sauvegarde restaurable**. L'export exige une confirmation récente du mot de passe.
 
 ## Confidentialité

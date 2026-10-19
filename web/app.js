@@ -1581,7 +1581,7 @@
     $('#project-general').addEventListener('click',()=>{state.projectId=null;state.projectPrivate=false;newChat();showView('chat');});
     $('#jobs-refresh').addEventListener('click',loadJobs);
     $('#project-refresh').addEventListener('click',guard(async()=>{const id=$('#project-picker').value;if(id)await renderProject(id);}));
-    $('#evaluation-run').addEventListener('click',guard(async()=>{await api('/api/evaluations',{method:'POST'});toast('Évaluation lancée : cinq appels maximum, selon ton mode et ton budget.');await loadJobs();}));
+    $('#evaluation-run').addEventListener('click',guard(async()=>{await api('/api/evaluations',{method:'POST'});toast('Évaluation lancée : cinq scénarios, selon ton mode et ton budget.');await loadJobs();}));
 
     state.bound = true;
     $$(".nav-btn").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
