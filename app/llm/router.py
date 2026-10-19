@@ -81,10 +81,11 @@ class Router:
         active = self.active()
         if not active:
             raise LLMUnavailable("Aucun fournisseur configuré. Ajoutez ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, GROQ_API_KEY ou OPENROUTER_API_KEY.")
-        mode = "PRIVATE" if private else self.mode()
+        mode = self.mode()
+        require_trust = private or mode == "PRIVATE"
         vision = any(m.get("images") for m in messages)
         candidates = [p for p in active if (not vision or p.vision) and (not tools or p.supports_tools)
-                      and (mode != "PRIVATE" or self.trusted(p))]
+                      and (not require_trust or self.trusted(p))]
         if mode == "ECONOMY":
             if not config.settings.llm_economy_allow_paid:
                 candidates = [p for p in candidates if p.cost_class() != "paid"]

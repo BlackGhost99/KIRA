@@ -146,3 +146,14 @@ class RouterV3Tests(KiraTestCase):
             self.assertEqual(error.retry_after, 120)
         for header in ("Infinity", "NaN", "invalid"):
             self.assertIsNone(http_error(FakeResponse(429, {}, headers={"retry-after": header}), "test").retry_after)
+
+    def test_private_context_keeps_economy_policy_and_never_enables_paid_fallback(self):
+        config.settings.llm_routing_mode = 'ECONOMY'
+        config.settings.llm_trusted_providers = 'paid,free'
+        paid = ScriptedProvider(['must not be called'], name='paid')
+        free = FreeProvider(['free private answer', LLMError('quota',429)], name='free')
+        router = use_router(paid, free)
+        self.assertEqual(router.complete([], [], private=True).text, 'free private answer')
+        with self.assertRaises(LLMUnavailable):
+            router.complete([], [], private=True)
+        self.assertEqual(paid.calls, [])
