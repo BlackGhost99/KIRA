@@ -93,9 +93,10 @@ def _execute(jid, fn=None):
         pulse.join(timeout=2)
     latest = db.q1('SELECT progress FROM background_jobs WHERE id = ?', [jid])
     progress = 100 if state == 'done' else (latest['progress'] if latest else 0)
-    db.run("UPDATE background_jobs SET state = ?, result = ?, error = ?, progress = ?, lease_until = 0, updated_at = ? "
-           "WHERE id = ? AND lease_owner = ?", [state, jdump(result or {}), error, progress, now_iso(), jid, owner])
-    audit.log('job_finished', {'id': jid, 'state': state})
+    with db.transaction():
+        db.run("UPDATE background_jobs SET state = ?, result = ?, error = ?, progress = ?, lease_until = 0, updated_at = ? "
+               "WHERE id = ? AND lease_owner = ?", [state, jdump(result or {}), error, progress, now_iso(), jid, owner])
+        audit.log('job_finished', {'id': jid, 'state': state})
     db.close()
 
 

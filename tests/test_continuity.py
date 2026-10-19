@@ -87,12 +87,19 @@ class DurableJobTests(KiraTestCase):
     def test_result_survives_database_reopen_and_expired_work_is_recovered(self):
         jobs.register('unit-safe', lambda payload,ctx: {'value':42})
         self.insert_job(state='running')
-        url = db.get_db().url
-        db.configure(url)
+        def reopen():
+            current = db.get_db()
+            factory = current._connect
+            current.close()
+            replacement = db.Database(current.url)
+            replacement._connect = factory  # conserve aussi le schéma isolé de la connexion PostgreSQL
+            db._db = replacement
+            replacement.init()
+        reopen()
         jobs.recover()
         wait_all()
         self.assertEqual(jobs.status()['last']['unit']['result'], {'value':42})
-        db.configure(url)
+        reopen()
         self.assertEqual(jobs.status()['items'][0]['state'], 'done')
 
     def test_two_workers_claim_a_job_once(self):
@@ -236,6 +243,22 @@ class ExactApprovalTests(KiraTestCase):
         with self.assertRaises(evolution.EvolutionError):
             evolution.approve(pid)
         self.assertEqual(self.http.calls, [])
+
+    def test_machine_action_changed_after_display_is_not_queued(self):
+        from app import devices
+        from tests.test_devices import pair_device
+        paired = pair_device()
+        action = devices.request_action(paired['device_id'], 'write_file', {'path':'/home/b/KIRA/note.txt','content':'Texte présenté'})
+        self.assertEqual(action['status'], 'pending')
+        token = action['approval_hash']
+        changed = {'path':'/home/b/KIRA/note.txt','content':'Texte différent'}
+        db.get_db().update('device_actions',action['id'],{'args':db.jdump(changed)})
+        with self.assertRaises(devices.DeviceError):
+            devices.approve(action['id'],token)
+        self.assertEqual(devices.get_action(action['id'])['status'], 'pending')
+        reviewed = devices.get_action(action['id'])
+        self.assertNotEqual(reviewed['approval_hash'], token)
+        self.assertEqual(devices.approve(action['id'],reviewed['approval_hash'])['status'], 'queued')
 
     def test_evaluation_records_five_synthetic_scenarios_without_executing_tools(self):
         use_router(ScriptedProvider(['42','{"nom":"KIRA","langue":"fr"}','Orion','DOCUMENT',tool_result('lookup',{'id':'alpha'})]))
