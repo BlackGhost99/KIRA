@@ -75,6 +75,39 @@ class MemoryEvidenceTests(KiraTestCase):
         self.assertEqual(memory.search_messages('confidentiel'), [])
 
 
+class DeviceRunningResultTests(KiraTestCase):
+    def test_already_claimed_action_waits_for_its_private_capture(self):
+        from app import devices
+        from app.tools import device_tools
+        from app.tools.registry import ToolContext
+        from tests.test_devices import PNG, pair_device
+
+        did = pair_device()['device_id']
+        devices.set_policy(did, {'screen': 'auto'})
+        request, wait = devices.request_action, devices.wait_for
+
+        def already_claimed(*args, **kwargs):
+            action = request(*args, **kwargs)
+            self.assertEqual(devices._claim_next(did)['id'], action['id'])
+            return devices.get_action(action['id'])
+
+        def finish_then_wait(action_id, timeout, **kwargs):
+            self.assertEqual(devices.get_action(action_id)['status'], 'running')
+            devices.submit_result(devices.get_device(did), action_id, True, 'Écran',
+                                  [{'b64': base64.b64encode(PNG).decode()}])
+            return wait(action_id, timeout, **kwargs)
+
+        ctx = ToolContext()
+        with patch.object(devices, 'request_action', side_effect=already_claimed), \
+             patch.object(devices, 'wait_for', side_effect=finish_then_wait) as waiting:
+            out = device_tools.device_action({'action': 'screenshot'}, ctx)
+        waiting.assert_called_once()
+        self.assertEqual(waiting.call_args.args[1], device_tools.WAIT_FOR_MACHINE)
+        self.assertIn('Capture jointe', out)
+        self.assertEqual(len(ctx.images), 1)
+        self.assertTrue(ctx.private_data)
+
+
 class DurableJobTests(KiraTestCase):
     def setUp(self):
         super().setUp()

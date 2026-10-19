@@ -127,7 +127,7 @@ def device_action(args: dict, ctx: ToolContext) -> str:
                                      conversation_id=ctx.conversation_id, tainted=ctx.tainted)
     except devices.DeviceError as exc:
         return f"Erreur : {exc}"
-    if act["status"] in ("pending", "queued"):
+    if act["status"] in ("pending", "queued", "running"):
         act = devices.wait_for(act["id"], WAIT_FOR_OWNER if act["status"] == "pending" else WAIT_FOR_MACHINE, step=1.0)
     return _outcome(act, ctx)
 
