@@ -1530,7 +1530,7 @@
   const loadJobs = guard(async()=>{
     const d=await api('/api/jobs');
     const root=$('#job-list'); if(!root) return;
-    root.replaceChildren(...(d.items||[]).map(j=>h('article',{class:'item'},h('b',{},j.name),h('p',{class:'hint'},`${j.state} · ${j.progress}% · tentative ${j.attempts}`),
+    root.replaceChildren(...(d.items||[]).map(j=>h('article',{class:'item'},h('b',{},({veille:'Veille',daily:'Entretien quotidien',evolution:'Analyse d’amélioration',document:'Lecture d’un document',evaluation:'Évaluation des réponses'})[j.kind]||'Traitement'),h('p',{class:'hint'},`${({queued:'En attente',running:'En cours',done:'Terminé',cancelled:'Arrêté',failed:'Échec',interrupted:'À reprendre'})[j.state]||'État inconnu'} · ${j.progress}% · tentative ${j.attempts}`),
       ['running','queued'].includes(j.state)?h('button',{type:'button',class:'btn small',on:{click:guard(async()=>{await api('/api/jobs/'+j.id+'/cancel',{method:'POST'});await loadJobs();})}},'Demander l’arrêt'):null,
       ['failed','interrupted','cancelled'].includes(j.state)?h('button',{type:'button',class:'btn small',on:{click:guard(async()=>{await api('/api/jobs/'+j.id+'/resume',{method:'POST'});await loadJobs();})}},'Relancer'):null)));
   });

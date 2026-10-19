@@ -38,7 +38,7 @@ w.fetch=async(url,opts={})=>{
   if(route==='/api/cards/c1/review'){effects++;Object.assign(cards[0],{due_at:Date.now()/1000+86400,correct:1,attempts:1,version:2});return respond(cards[0]);}
   if(route==='/api/projects/p1/documents'){assert.equal(Buffer.from(body.data,'base64').toString(),'Preuve Orion');documents.push({id:'d1',name:body.name,state:'ready',pages:1});return respond(documents[0]);}
   if(route==='/api/documents/d1/pages/1')return respond({name:'notes.txt',location:'section',number:1,content:'Preuve Orion'});
-  if(route==='/api/jobs')return respond({items:[],running:{},last:{}});
+  if(route==='/api/jobs')return respond({items:[{id:'j1',name:'document-d1',kind:'document',state:'done',progress:100,attempts:1}],running:{},last:{}});
   if(route==='/api/actions/pending')return respond({actions:[]});
   return respond({});
 };
@@ -61,7 +61,7 @@ function button(label,scope='#project-detail'){return [...w.document.querySelect
   w.document.querySelector('[placeholder=Question]').closest('form').dispatchEvent(new w.Event('submit',{cancelable:true}));await settle();
   button('Je maîtrise').click();await settle();assert.equal(effects,1);assert(button('Je maîtrise').disabled);
   const input=w.document.querySelector('[aria-label="Document du projet"]');Object.defineProperty(input,'files',{value:[new w.File(['Preuve Orion'],'notes.txt')]});button('Importer').click();await settle();
-  assert.equal(documents.length,1);button('Ouvrir le texte').click();await settle();assert.match(w.document.querySelector('.document-text').textContent,/Preuve Orion/);
+  assert.equal(documents.length,1);assert.match(w.document.querySelector('#job-list').textContent,/Terminé/);button('Ouvrir le texte').click();await settle();assert.match(w.document.querySelector('.document-text').textContent,/Preuve Orion/);
   button('Discuter de ce projet').click();await settle();assert.equal(w.document.querySelector('#view-chat').hidden,false);assert.match(w.document.querySelector('#chat-project').textContent,/Orion/);
   const mic=w.document.querySelector('#voice-mic');mic.click();assert.equal(started,0,'Aucun envoi audio sans accord explicite');
   w.document.querySelector('#voice-consent').checked=true;w.document.querySelector('#voice-locale').value='en-US';mic.click();assert.equal(recognizer.lang,'en-US');assert.equal(started,1);
