@@ -99,6 +99,9 @@
   // ================= état et API =================
   const state = {
     authenticated: false,
+    projectId: null,
+    projectPrivate: false,
+    listening: false,
     name: "",
     view: "chat",
     convId: null,
@@ -142,6 +145,7 @@
   }
 
   function confirmPassword() {
+    if(state.stopVoice)state.stopVoice();
     if (reauthPromise) return reauthPromise;
     reauthPromise = new Promise((resolve) => {
       const dialog = $("#auth-reauth");
@@ -291,7 +295,7 @@
       const html = marked.parse(text, { gfm: true, breaks: false, async: false });
       const frag = DOMPurify.sanitize(html, {
         RETURN_DOM_FRAGMENT: true,
-        ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|\/api\/files\/)/i,
+        ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|\/api\/(?:files|documents)\/)/i,
         FORBID_TAGS: ["style", "form", "input", "button", "textarea", "select", "iframe", "object", "embed", "svg", "math"],
         FORBID_ATTR: ["style"],
       });
@@ -358,6 +362,7 @@
   }
 
   function logout(message) {
+    if(state.stopVoice)state.stopVoice();
     if ($("#auth-reauth").open) $("#auth-reauth").dispatchEvent(new Event("cancel", { cancelable: true }));
     clearImages();
     $("#tray").replaceChildren();
@@ -428,12 +433,13 @@
   // ================= navigation =================
   function showView(name) {
     state.view = name;
-    for (const v of ["chat", "memory", "veille", "more"]) show($("#view-" + v), v === name);
+    for (const v of ["chat", "memory", "veille", "projects", "more"]) show($("#view-" + v), v === name);
     $$(".nav-btn").forEach((b) => { if (b.dataset.view === name) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     closeDrawer();
     if (name === "memory") loadMemory();
     if (name === "veille") loadVeille();
-    if (name === "more") loadMore();
+    if (name === "more") {loadMore(); loadJobs();}
+    if (name === "projects") loadProjects();
   }
 
   function openDrawer() { $("#history").classList.add("open"); show($("#scrim"), true); }
@@ -450,7 +456,9 @@
 
   // ================= discussion =================
   function newChat() {
+    if(state.stopVoice)state.stopVoice();
     state.convId = null;
+    $("#chat-project").textContent = state.projectId ? "Projet sélectionné" : "Conversation générale";
     state.lastMsgId = 0;
     $("#messages").replaceChildren();
     show($("#welcome"), true);
@@ -530,6 +538,8 @@
   const openConversation = guard(async (id) => {
     const data = await api("/api/conversations/" + id);
     state.convId = id;
+    state.projectId = data.conversation.project_id || null;
+    $("#chat-project").textContent = state.projectId ? "Conversation liée à un projet" : "Conversation générale";
     state.lastMsgId = 0;
     $("#messages").replaceChildren();
     show($("#welcome"), false);
@@ -553,6 +563,8 @@
     fetch_url: "lu une page",
     remember: "retenu quelque chose de toi",
     recall: "retrouvé nos échanges",
+    project_status: "relu ton projet",
+    search_documents: "retrouvé un passage dans tes documents",
     devices: "regardé tes machines",
     device_action: "agi sur une de tes machines",
     device_result: "relu le résultat d'une demande",
@@ -564,6 +576,7 @@
     const tools = [...new Set(meta.tools || [])].map((t) => TOOL_NOTE[t]).filter(Boolean);
     if (tools.length) el.append(h("div", { class: "notes" }, tools.map((t) => h("span", {}, "J'ai " + t))));
     el.append(renderMarkdown(m.content));
+    if(window.speechSynthesis) el.append(h('button',{type:'button',class:'btn ghost small','data-speak':m.content},'Lire à voix haute'));
 
     const up = h("button", { type: "button", class: "icon-btn", "aria-label": "Utile", "aria-pressed": "false" }, icon("thumb"));
     const down = h("button", { type: "button", class: "icon-btn", "aria-label": "Pas utile", "aria-pressed": "false" }, icon("thumb", "flip"));
@@ -688,7 +701,7 @@
     let failure = null;
     let answered = false;
     try {
-      await streamChat({ message: text, conversation_id: state.convId, tier }, (ev) => {
+      await streamChat({ message: text, conversation_id: state.convId, tier, project_id: state.projectId }, (ev) => {
         if (ev.type === "conversation") {
           state.convId = ev.id;
           setTitle(ev.title);
@@ -743,7 +756,7 @@
     t.style.height = "auto";
     t.style.height = Math.min(t.scrollHeight, 168) + "px";
   }
-  function updateSend() { $("#send").disabled = state.busy || !$("#input").value.trim(); }
+  function updateSend() { $("#send").disabled = state.listening || state.busy || !$("#input").value.trim(); }
 
   const seqs = {};
   const fresh = (key) => { const n = (seqs[key] = (seqs[key] || 0) + 1); return () => seqs[key] === n; };
@@ -752,6 +765,7 @@
   const KIND_LABEL = { profile: "Sur toi", fact: "Fait", knowledge: "Appris", note: "Note", identity: "Identité de KIRA", episodic: "Événement", procedural: "Méthode", project: "Projet", goal: "Objectif", experience: "Expérience", relationship: "Relation" };
   const KIND_TABS = [["", "Tout"], ...Object.entries(KIND_LABEL)];
   $("#memory-status").addEventListener("change", () => loadMemory());
+  $("#memory-private").addEventListener("change",()=>loadMemory());
 
   const loadMemory = guard(async () => {
     const q = $("#memory-q").value.trim();
@@ -759,6 +773,7 @@
     if (state.memKind) params.set("kind", state.memKind);
     if (q) params.set("q", q);
     params.set("status", $("#memory-status").value);
+    if($("#memory-private").checked)params.set("include_private","1");
     const isFresh = fresh("memory");
     const data = await api("/api/memory?" + params);
     if (!isFresh()) return;
@@ -780,6 +795,7 @@
     const card = h("article", { class: "item", "data-id": it.id });
     const view = () => {
       const tools = h("div", { class: "tools tight" },
+        it.evidence_status!=='confirmed'?h('button',{type:'button',class:'btn small',on:{click:guard(async()=>{Object.assign(it,await api('/api/memory/'+it.id,{method:'PATCH',body:{evidence_status:'confirmed'}}));view();})}},'Confirmer'):null,
         h("button", { type: "button", class: "btn ghost small", on: { click: guard(async () => {
           const data = await api(`/api/memory/${it.id}/history`);
           const versions = h("div", { class: "memory-history" }, data.items.map(v => h("div", { class: "item" },
@@ -799,6 +815,9 @@
         })));
       const meta = h("div", { class: "meta" }, h("span", { class: "kind" }, KIND_LABEL[it.kind] || it.kind),
         h("span", {}, `v${it.version || 1}`),
+        h("span", {}, ({confirmed:'Confirmé',inferred:'Déduction à confirmer',unverified:'À vérifier'})[it.evidence_status]||'À vérifier'),
+        it.private?h('span',{},'Privé'):null,
+        it.origin_conversation?h('button',{type:'button',class:'linkish',on:{click:()=>{showView('chat');openConversation(it.origin_conversation);}}},'Échange d’origine'):null,
         it.superseded_by ? h("span", {}, `Remplacé par le souvenir #${it.superseded_by}`) : null,
         it.tags ? h("span", {}, it.tags) : null, h("span", {}, relTime(it.created_at)),
         /^https?:\/\//.test(it.source || "") ? h("a", { href: it.source, target: "_blank", rel: "noopener noreferrer" }, "source") : (it.source ? h("span", {}, it.source) : null));
@@ -807,12 +826,13 @@
     const edit = () => {
       const ta = h("textarea", { rows: "4", maxlength: "4000", "aria-label": "Contenu du souvenir" });
       ta.value = it.content;
+      const privateBox=h("input",{type:"checkbox",checked:!!it.private});
       const kind = h("select", { "aria-label": "Type" }, Object.entries(KIND_LABEL).map(([k, v]) => h("option", { value: k }, v)));
       kind.value = it.kind;
       const save = h("button", { type: "button", class: "btn primary small", on: { click: guard(async () => {
         const v = ta.value.trim();
         if (!v) { toast("Un souvenir ne peut pas être vide.", true); return; }
-        const updated = await api("/api/memory/" + it.id, { method: "PATCH", body: { content: v, kind: kind.value } });
+        const updated = await api("/api/memory/" + it.id, { method: "PATCH", body: { content: v, kind: kind.value, private:privateBox.checked } });
         Object.assign(it, updated);
         view();
         toast("C'est corrigé.");
@@ -824,7 +844,7 @@
         await loadMemory();
         toast("Nouvelle information retenue. L'ancienne reste dans l'historique.");
       }) } }, "Remplacer l'information") : null;
-      card.replaceChildren(ta, h("div", { class: "row" }, h("label", { class: "field grow" }, h("span", {}, "Type"), kind),
+      card.replaceChildren(ta,h("label",{class:"row"},privateBox,"Souvenir privé"), h("div", { class: "row" }, h("label", { class: "field grow" }, h("span", {}, "Type"), kind),
         h("div", { class: "actions" }, h("button", { type: "button", class: "btn ghost small", on: { click: view } }, "Annuler"), replace, save)));
       ta.focus();
     };
@@ -1003,6 +1023,8 @@
       list.append(h("p", { class: "empty" }, "Aucune idée pour l'instant. Dis-moi ce qui te gêne dans nos échanges, ou lance une analyse."));
       return;
     }
+    const bench = $('#evaluation-report');
+    api('/api/evaluations').then(data=>{bench.replaceChildren(...data.runs.slice(0,2).map(r=>h('p',{class:'hint'},`${r.report.passed}/${r.report.total} scénarios réussis · ${r.revision.slice(0,8) || 'révision locale'} · ${relTime(r.created_at)}`)));}).catch(()=>{});
     const githubOk = !!(state.status && state.status.github);
     for (const p of data.proposals) {
       const card = h("article", { class: "item proposal" }, STATUS_PILL(p), h("h3", {}, p.title), h("div", { class: "body" }, p.rationale));
@@ -1012,12 +1034,12 @@
       }
       if (p.error && p.status === "draft") card.append(h("p", { class: "hint warn" }, p.error));
       if (p.status === "draft") {
-        if (p.tests_ok !== false && !githubOk) card.append(h("p", { class: "hint warn" }, "GitHub n'est pas connecté : ajoute GITHUB_TOKEN dans les réglages du serveur pour pouvoir accepter."));
+        if (p.tests_ok === true && !githubOk) card.append(h("p", { class: "hint warn" }, "GitHub n'est pas connecté : ajoute GITHUB_TOKEN dans les réglages du serveur pour pouvoir accepter."));
         const tools = h("div", { class: "tools" });
-        if (p.tests_ok !== false) {
+        if (p.tests_ok === true) {
           tools.append(h("button", { type: "button", class: "btn primary small", disabled: !githubOk, on: { click: guard(async (e) => {
             const btn = e.currentTarget; btn.disabled = true; btn.textContent = "Envoi…";
-            try { await api(`/api/evolution/${p.id}/approve`, { method: "POST", timeout: 120000 }); toast("Envoyée sur GitHub : à toi de la relire."); }
+            try { await api(`/api/evolution/${p.id}/approve`, { method: "POST", body: { approval_hash: p.approval_hash }, timeout: 120000 }); toast("Envoyée sur GitHub : à toi de la relire."); }
             finally { loadEvolution(); refreshStatus(); }
           }) } }, icon("check"), "Accepter"));
         }
@@ -1096,6 +1118,15 @@
       actions.append(h("button", { type: "button", class: "btn", on: { click: installApp } }, icon("download"), "Installer sur l'écran d'accueil"));
     }
     actions.append(h("button", { type: "button", class: "btn ghost", on: { click: guard(async () => { await api("/api/auth/logout", { method: "POST" }); logout(""); }) } }, icon("logout"), "Se déconnecter"));
+    const trusted=h('fieldset',{},h('legend',{},'Fournisseurs autorisés pour les données privées'));
+    const choices=s.providers.filter(p=>p.configured).map(p=>({name:p.name,box:h('input',{type:'checkbox',checked:!!p.trusted})}));
+    for(const c of choices)trusted.append(h('label',{class:'row'},c.box,c.name));
+    trusted.append(h('button',{type:'button',class:'btn small',on:{click:guard(async()=>{await api('/api/settings/trusted-providers',{method:'POST',body:{providers:choices.filter(c=>c.box.checked).map(c=>c.name)}});await refreshStatus();renderSettings();})}},'Enregistrer les autorisations'));
+    root.append(trusted);
+    actions.append(h('button',{type:'button',class:'btn',on:{click:guard(async()=>{
+      const response=await api('/api/backup',{raw:true});const url=URL.createObjectURL(await response.blob());
+      const a=h('a',{href:url,download:'kira-personal.json.gz'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+    })}},'Sauvegarde restaurable'));
     root.append(actions);
     const sessionsRoot = h("div", {}, h("p", { class: "hint" }, "Chargement des sessions…"));
     root.append(h("h3", { class: "sub-h" }, "Sessions connectées"), sessionsRoot);
@@ -1200,7 +1231,7 @@
     const decide = (verb) => async () => {
       buttons.forEach((b) => (b.disabled = true));
       try {
-        await api(`/api/actions/${a.id}/${verb}`, { method: "POST" });
+        await api(`/api/actions/${a.id}/${verb}`, { method: "POST", body: { approval_hash: a.approval_hash } });
         toast(verb === "approve" ? "Autorisé. J'envoie à la machine." : "Refusé. Rien n'est fait.");
         card.remove(); // tout de suite : pas d'attente du prochain relevé
         if (!$("#tray .tray-card")) { show($("#tray"), false); $("#tray").dataset.key = ""; document.documentElement.style.setProperty("--tray-h", "0px"); }
@@ -1414,7 +1445,144 @@
   });
 
   // ================= liaison de l'interface =================
+  // ================= projets et travail durable =================
+  const loadProjects = guard(async () => {
+    const data = await api('/api/projects');
+    state.projects = data.projects;
+    const select = $('#project-picker');
+    const chosen = select.value || state.projectId || '';
+    select.replaceChildren(h('option', {value: ''}, 'Choisir un projet'), ...data.projects.map(p => h('option', {value:p.id}, p.title)));
+    select.value = chosen;
+    if (select.value) await renderProject(select.value);
+  });
+
+  async function renderProject(id) {
+    const isFresh=fresh('projectDetail');
+    const d = await api('/api/projects/' + encodeURIComponent(id));
+    if(!isFresh())return;
+    state.projectDetail = d;
+    const p = d.project;
+    const root = $('#project-detail');
+    const goal = h('textarea', {rows:2, 'aria-label':'Objectif du projet', maxlength:4000, value:p.goal});
+    const context = h('textarea', {rows:3, 'aria-label':'Contexte du projet', maxlength:12000, value:p.context});
+    const privateBox = h('input', {type:'checkbox', checked:!!p.private});
+    root.replaceChildren(h('h2', {}, p.title), h('p', {class:'hint'}, 'Version ' + p.version + ' · ' + relTime(p.updated_at)),
+      h('label', {class:'field'}, h('span', {}, 'Objectif'), goal),
+      h('label', {class:'field'}, h('span', {}, 'Contexte et décisions'), context),
+      h('label', {class:'row'}, privateBox, 'Données privées : fournisseurs approuvés uniquement'),
+      h('div', {class:'stack'}, h('button', {type:'button', class:'btn', on:{click:guard(async()=>{
+        await api('/api/projects/' + id, {method:'PATCH', body:{version:p.version, goal:goal.value || 'À préciser', context:context.value || 'À préciser', private:privateBox.checked}});
+        await renderProject(id);
+      })}}, 'Enregistrer'), h('button', {type:'button', class:'btn primary', on:{click:()=>{
+        state.projectId=id; state.projectPrivate=!!p.private;
+        showView('chat'); newChat(); setTitle(p.title); $('#chat-project').textContent='Projet : ' + p.title;
+      }}}, 'Discuter de ce projet')));
+    const taskTitle = h('input', {type:'text', maxlength:500, placeholder:'Prochaine tâche', required:true});
+    const form = h('form', {class:'row', on:{submit:guard(async(e)=>{
+      e.preventDefault(); await api('/api/projects/' + id + '/tasks', {method:'POST', body:{title:taskTitle.value}}); await renderProject(id);
+    })}}, taskTitle, h('button', {class:'btn', type:'submit'}, 'Ajouter'));
+    root.append(h('h3', {}, 'Tâches'), form);
+    for (const t of d.tasks) {
+      const states = h('select', {'aria-label':'État de ' + t.title}, ...[['todo','À faire'],['in_progress','En cours'],['blocked','Bloquée'],['done','Terminée']].map(([value,label])=>h('option',{value},label)));
+      states.value=t.state;
+      const result=h('textarea',{rows:2, maxlength:12000, 'aria-label':'Résultat de ' + t.title, value:t.result, placeholder:'Résultat ou blocage'});
+      root.append(h('article',{class:'item'}, h('h3',{},t.title),states,result,h('button',{type:'button',class:'btn small',on:{click:guard(async()=>{
+        await api('/api/project-tasks/'+t.id,{method:'PATCH',body:{version:t.version,state:states.value,result:result.value}}); await renderProject(id);
+      })}},'Enregistrer la tâche')));
+    }
+    root.append(h('h3',{},'Documents'),h('p',{class:'hint'},'PDF, Word, TXT ou Markdown · 4 Mo maximum. Les réponses donnent la page PDF ou la section du texte utilisée.'));
+    const input=h('input',{type:'file',accept:'.pdf,.docx,.txt,.md','aria-label':'Document du projet'});
+    const upload=h('button',{type:'button',class:'btn',on:{click:guard(async()=>{
+      const file=input.files[0]; if(!file) return;
+      if(file.size>4000000) throw new ApiError('Le fichier dépasse 4 Mo.',400);
+      upload.disabled=true;
+      try {
+        const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=reject;reader.readAsDataURL(file);});
+        await api('/api/projects/'+id+'/documents',{method:'POST',body:{name:file.name,data}});await renderProject(id);await loadJobs();
+      } finally {upload.disabled=false;}
+    })}},'Importer');
+    root.append(h('div',{class:'stack'},input,upload));
+    for(const doc of d.documents){
+      const remove=armed(h('button',{type:'button',class:'btn ghost small'},'Effacer'),'Confirmer',guard(async()=>{
+        await api('/api/documents/'+doc.id,{method:'DELETE'});await renderProject(id);
+      }));
+      const passage=h('div',{});
+      const number=h('input',{type:'number',min:1,max:doc.pages||1,value:1,'aria-label':'Page ou section de '+doc.name});
+      const open=h('button',{type:'button',class:'btn small',on:{click:guard(async()=>{const p=await api('/api/documents/'+doc.id+'/pages/'+Number(number.value));passage.replaceChildren(h('p',{class:'meta'},p.location+' '+p.number),h('pre',{class:'document-text'},p.content));})}},'Ouvrir le texte');
+      root.append(h('article',{class:'item'},h('b',{},doc.name),h('p',{class:'hint'},({ready:'Prêt à consulter',queued:'En traitement',failed:'À réimporter'})[doc.state]||doc.state),doc.error? h('p',{},doc.error):null,doc.state==='ready'?h('div',{class:'row'},number,open):null,passage,remove));
+    }
+    root.append(h('h3',{},'Apprendre et réviser'),h('p',{class:'hint'},'Crée une question et sa réponse de référence, puis indique honnêtement si tu la maîtrises.'));
+    const question=h('input',{type:'text',maxlength:2000,placeholder:'Question',required:true});
+    const answer=h('textarea',{rows:3,maxlength:6000,placeholder:'Réponse de référence',required:true});
+    const source=h('input',{type:'text',maxlength:1000,placeholder:'Source ou page (facultatif)'});
+    root.append(h('form',{class:'stack',on:{submit:guard(async(e)=>{e.preventDefault();await api('/api/projects/'+id+'/cards',{method:'POST',body:{question:question.value,answer:answer.value,source:source.value}});await renderProject(id);})}}, question,answer,source,h('button',{type:'submit',class:'btn'},'Créer une révision')));
+    for(const c of d.cards){
+      const due=c.due_at*1000<=Date.now();
+      const reveal=h('details',{},h('summary',{},c.question),h('p',{},c.answer),h('p',{class:'hint'},c.source));
+      const buttons=h('div',{class:'stack'});
+      for(const [label,remembered] of [['À revoir',false],['Je maîtrise',true]]) buttons.append(h('button',{type:'button',class:'btn small',disabled:!due,on:{click:guard(async()=>{
+        await api('/api/cards/'+c.id+'/review',{method:'POST',body:{version:c.version,remembered}});await renderProject(id);
+      })}},label));
+      root.append(h('article',{class:'item'},reveal,h('p',{class:'hint'},`${c.correct}/${c.attempts} réussites déclarées · ${due?'À réviser':new Date(c.due_at*1000).toLocaleString('fr-FR')}`),buttons));
+    }
+  }
+
+  const loadJobs = guard(async()=>{
+    const d=await api('/api/jobs');
+    const root=$('#job-list'); if(!root) return;
+    root.replaceChildren(...(d.items||[]).map(j=>h('article',{class:'item'},h('b',{},j.name),h('p',{class:'hint'},`${j.state} · ${j.progress}% · tentative ${j.attempts}`),
+      ['running','queued'].includes(j.state)?h('button',{type:'button',class:'btn small',on:{click:guard(async()=>{await api('/api/jobs/'+j.id+'/cancel',{method:'POST'});await loadJobs();})}},'Demander l’arrêt'):null,
+      ['failed','interrupted','cancelled'].includes(j.state)?h('button',{type:'button',class:'btn small',on:{click:guard(async()=>{await api('/api/jobs/'+j.id+'/resume',{method:'POST'});await loadJobs();})}},'Relancer'):null)));
+  });
+
+  // ================= voix, seulement sur demande =================
+  function setupVoice(){
+    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    const mic=$('#voice-mic'), consent=$('#voice-consent'), locale=$('#voice-locale');
+    let recognition=null, active=false, draft='', finalText='', interimText='';
+    const stop=()=>{active=false;state.listening=false;if(recognition)recognition.stop();mic.textContent='Parler';updateSend();};
+    state.stopVoice=()=>{active=false;state.listening=false;if(recognition){recognition.onresult=null;recognition.onend=null;recognition.abort();}mic.textContent='Parler';if(window.speechSynthesis)window.speechSynthesis.cancel();updateSend();};
+    mic.disabled=!Recognition;
+    $('#voice-hint').textContent=Recognition?'La dictée peut transmettre ton audio au service du navigateur. Active-la uniquement si tu l’acceptes.':'Dictée indisponible dans ce navigateur. Tu peux continuer à écrire.';
+    mic.addEventListener('click',()=>{
+      if(active)return stop();
+      if(!consent.checked)return toast('Autorise d’abord le service de dictée.',true);
+      recognition=new Recognition();recognition.continuous=true;recognition.interimResults=true;recognition.lang=locale.value;
+      draft=$('#input').value; finalText='';active=true;state.listening=true;mic.textContent='Arrêter';updateSend();
+      const current=recognition;
+      recognition.onresult=(event)=>{
+        if(current!==recognition)return;
+        let interim='';
+        for(let i=event.resultIndex;i<event.results.length;i++){
+          if(event.results[i].isFinal)finalText+=event.results[i][0].transcript+' ';else interim+=event.results[i][0].transcript;
+        }
+        interimText=interim;
+        $('#input').value=[draft,finalText+interim].filter(Boolean).join(' ');autosize();
+      };
+      recognition.onerror=()=>{active=false;state.listening=false;mic.textContent='Parler';updateSend();toast('Dictée interrompue. Le texte déjà saisi est conservé.',true);};
+      recognition.onend=()=>{if(current!==recognition)return;if(active){if(interimText){finalText+=interimText+' ';interimText='';}try{recognition.start();}catch(e){stop();}}else{state.listening=false;updateSend();}};
+      try{recognition.start();}catch(e){stop();toast('Le microphone ne peut pas démarrer.',true);}
+    });
+    document.addEventListener('visibilitychange',()=>{if(document.hidden&&active)stop();});
+    consent.addEventListener('change',()=>{if(!consent.checked&&active)stop();});
+    window.addEventListener('pagehide',()=>{if(active)stop();if(window.speechSynthesis)window.speechSynthesis.cancel();});
+  }
+
   function bindUi() {
+    setupVoice();
+    $('#voice-stop-reading').addEventListener('click',()=>{if(window.speechSynthesis)window.speechSynthesis.cancel();});
+    setInterval(()=>{if(state.authenticated&&state.view==='projects'){loadJobs();}},20000);
+    $('#messages').addEventListener('click',(e)=>{const btn=e.target.closest('[data-speak]');if(!btn||!window.speechSynthesis)return;if(state.stopVoice)state.stopVoice();window.speechSynthesis.cancel();const speech=new SpeechSynthesisUtterance(btn.dataset.speak);speech.lang=$('#voice-locale').value;window.speechSynthesis.speak(speech);});
+    $('#project-picker').addEventListener('change',guard(async(e)=>{if(e.target.value)await renderProject(e.target.value);else $('#project-detail').replaceChildren();}));
+    $('#project-create').addEventListener('submit',guard(async(e)=>{
+      e.preventDefault();const p=await api('/api/projects',{method:'POST',body:{title:$('#project-title').value,goal:$('#project-goal').value,private:true}});
+      state.projectId=p.id;$('#project-title').value='';$('#project-goal').value='';await loadProjects();$('#project-picker').value=p.id;await renderProject(p.id);
+    }));
+    $('#project-general').addEventListener('click',()=>{state.projectId=null;state.projectPrivate=false;newChat();showView('chat');});
+    $('#jobs-refresh').addEventListener('click',loadJobs);
+    $('#project-refresh').addEventListener('click',guard(async()=>{const id=$('#project-picker').value;if(id)await renderProject(id);}));
+    $('#evaluation-run').addEventListener('click',guard(async()=>{await api('/api/evaluations',{method:'POST'});toast('Évaluation lancée : cinq appels maximum, selon ton mode et ton budget.');await loadJobs();}));
+
     state.bound = true;
     $$(".nav-btn").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
     $("#history-open").addEventListener("click", openDrawer);
@@ -1481,7 +1649,7 @@
       e.preventDefault();
       const content = $("#memory-add-text").value.trim();
       if (!content) return;
-      await api("/api/memory", { method: "POST", body: { kind: $("#memory-add-kind").value, content } });
+      await api("/api/memory", { method: "POST", body: { kind: $("#memory-add-kind").value, content, private:$("#memory-add-private").checked } });
       $("#memory-add-text").value = "";
       $("#memory-add").hidden = true;
       toast("Retenu.");

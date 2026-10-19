@@ -216,9 +216,14 @@ class PullRequestTests(KiraTestCase):
     def setUp(self):
         super().setUp()
         config.settings.evolution_run_tests = False
+        from unittest.mock import patch
+        self.addCleanup(patch.stopall)
+        patch('app.evolution.run_tests', return_value=(True, 'Suite simulée explicitement pour le test GitHub')).start()
         config.settings.github_token = "ghp_test"
         use_router(ScriptedProvider([as_reply(GOOD)]))
-        self.pid = evolution.propose()["id"]
+        from unittest.mock import patch
+        with patch('app.evolution.source_revision', return_value='base-sha'):
+            self.pid = evolution.propose()["id"]
         source = read_local("app/agent.py")
         base = f"/repos/{self.REPO}"
         self.http.route("GET", f"{base}/contents/app/agent.py", FakeResponse(200, {"sha": "sha-agent", "content": base64.b64encode(source.encode()).decode()}))
@@ -250,7 +255,9 @@ class PullRequestTests(KiraTestCase):
         with self.assertRaises(EvolutionError):
             evolution.approve(self.pid)
         use_router(ScriptedProvider([as_reply(GOOD)]))
-        other = evolution.propose()["id"]
+        from unittest.mock import patch
+        with patch('app.evolution.source_revision', return_value='base-sha'):
+            other = evolution.propose()["id"]
         self.assertEqual(evolution.reject(other)["status"], "rejected")
         with self.assertRaises(EvolutionError):
             evolution.approve(other)

@@ -117,7 +117,7 @@ class AgentTests(KiraTestCase):
 class ToolRegistryTests(KiraTestCase):
     def test_all_tools_registered_with_valid_schemas(self):
         names = {s.name for s in tools.specs()}
-        self.assertEqual(names, {"python", "remember", "recall", "web_search", "fetch_url", "devices", "device_action", "device_result"})
+        self.assertEqual(names, {"python", "remember", "recall", "web_search", "fetch_url", "devices", "device_action", "device_result", "project_status", "search_documents"})
         for spec in tools.specs():
             self.assertEqual(spec.parameters["type"], "object")
             self.assertTrue(spec.description)

@@ -32,7 +32,8 @@ Déjà connu :
 
 def consolidate(hours: int = 24) -> dict:
     since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat(timespec="seconds")
-    rows = get_db().q("SELECT role, content FROM messages WHERE created_at >= ? ORDER BY id", [since])
+    rows = get_db().q("SELECT m.role, m.content FROM messages m JOIN conversations c ON c.id = m.conversation_id "
+                       "WHERE m.created_at >= ? AND c.private = 0 ORDER BY m.id", [since])
     if sum(1 for r in rows if r["role"] == "user") < 3:
         return {"added": 0, "skipped": "pas assez d'échanges récents"}
     owner = config.settings.owner_name

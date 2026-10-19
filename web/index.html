@@ -79,6 +79,7 @@
       <button class="nav-btn" data-view="chat" aria-current="page"><svg class="ic"><use href="#i-chat"/></svg><span>Discuter</span></button>
       <button class="nav-btn" data-view="memory"><svg class="ic"><use href="#i-book"/></svg><span>Mémoire</span></button>
       <button class="nav-btn" data-view="veille"><svg class="ic"><use href="#i-radar"/></svg><span>Veille</span><i class="dot" id="badge-veille" hidden></i></button>
+      <button class="nav-btn" data-view="projects"><svg class="ic"><use href="#i-device"/></svg><span>Projets</span></button>
       <button class="nav-btn" data-view="more"><svg class="ic"><use href="#i-sliders"/></svg><span>Plus</span><i class="dot" id="badge-more" hidden></i></button>
     </nav>
 
@@ -112,9 +113,17 @@
         <div id="messages" class="messages"></div>
       </div>
 
+      <p id="chat-project" class="hint">Conversation générale</p>
       <form id="composer" class="composer">
         <div class="composer-box">
           <textarea id="input" rows="1" placeholder="Écris à KIRA…" aria-label="Ton message" enterkeyhint="send"></textarea>
+          <details class="voice-controls"><summary>Voix</summary>
+            <label><input id="voice-consent" type="checkbox"> Autoriser le service de dictée du navigateur</label>
+            <p id="voice-hint" class="hint"></p>
+            <select id="voice-locale" aria-label="Langue de la voix"><option value="fr-FR">Français</option><option value="en-US">English</option></select>
+            <button id="voice-mic" class="btn small" type="button">Parler</button>
+            <button id="voice-stop-reading" class="btn small" type="button">Arrêter la lecture</button>
+          </details>
           <div class="composer-row">
             <button type="button" id="deep" class="chip toggle" aria-pressed="false" title="Plus lent, plus approfondi : pour les raisonnements difficiles">
               <svg class="ic"><use href="#i-spark"/></svg><span>Réflexion approfondie</span>
@@ -123,6 +132,14 @@
           </div>
         </div>
       </form>
+    </section>
+
+    <section id="view-projects" class="view page" hidden>
+      <header class="page-head"><h1>Projets et apprentissage</h1><p>Objectifs, documents et prochaines étapes partagés entre tes appareils.</p></header>
+      <form id="project-create" class="card stack"><input id="project-title" placeholder="Nom du projet" aria-label="Nom du projet" required maxlength="120"><textarea id="project-goal" placeholder="Objectif" aria-label="Objectif" maxlength="4000"></textarea><button type="submit" class="btn">Créer un projet privé</button></form>
+      <div class="toolbar"><select id="project-picker" aria-label="Projet"><option value="">Choisir un projet</option></select><button id="project-general" class="btn" type="button">Discussion générale</button></div>
+      <button id="project-refresh" type="button" class="btn small">Actualiser le projet</button>
+      <div id="project-detail" class="stack"></div>
     </section>
 
     <!-- Mémoire -->
@@ -136,9 +153,11 @@
         <button class="btn" id="memory-add-btn"><svg class="ic"><use href="#i-plus"/></svg>Ajouter</button>
         <label class="field"><span>Afficher</span><select id="memory-status"><option value="active">Souvenirs actifs</option><option value="archived">Archives</option><option value="superseded">Informations remplacées</option></select></label>
       </div>
+      <label class="row"><input id="memory-private" type="checkbox"> Inclure les souvenirs privés dans la recherche par mots</label>
       <div id="memory-kinds" class="seg" role="tablist" aria-label="Types de souvenirs"></div>
       <p id="memory-search-status" class="meta" aria-live="polite"></p>
       <form id="memory-add" class="card form" hidden>
+        <label class="row"><input id="memory-add-private" type="checkbox"> Souvenir privé</label>
         <label class="field"><span>Quoi retenir ?</span><textarea id="memory-add-text" rows="3" maxlength="4000" required></textarea></label>
         <div class="row">
           <label class="field grow"><span>Type</span>
@@ -192,8 +211,11 @@
         </form>
         <p id="evo-state" class="hint" hidden></p>
         <div id="evo-list" class="list"></div>
+        <h3>Mesurer les réponses</h3><p class="hint">Cinq scénarios synthétiques : calcul, format, contexte, document et outil. Les appels utilisent ton mode et ton budget ; aucun outil réel n’est exécuté.</p>
+        <button id="evaluation-run" type="button" class="btn">Évaluer KIRA</button><div id="evaluation-report"></div>
       </section>
 
+      <section class="block"><h2>Traitements en cours et récents</h2><button type="button" id="jobs-refresh" class="btn small">Actualiser</button><div id="job-list" class="list"></div></section>
       <section class="block" id="settings">
         <h2><svg class="ic"><use href="#i-sliders"/></svg>Réglages</h2>
         <div id="settings-body"></div>

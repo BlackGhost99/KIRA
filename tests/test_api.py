@@ -33,6 +33,21 @@ class ApiTestCase(KiraTestCase):
         tok = self.token if token == "default" else token
         if tok:
             headers["authorization"] = f"Bearer {tok}"
+        if method == 'POST' and path.endswith('/approve') and body is None:
+            body = {}
+            try:
+                pid = int(path.split('/')[-2])
+                if path.startswith('/api/evolution/'):
+                    proposal = evolution.get_proposal(pid)
+                    if proposal:
+                        body['approval_hash'] = proposal['approval_hash']
+                elif path.startswith('/api/actions/'):
+                    from app import devices
+                    action = devices.get_action(pid)
+                    if action:
+                        body['approval_hash'] = action['approval_hash']
+            except ValueError:
+                pass
         return call(app, method, path, json_body=body, headers=headers, **kw)
 
 
@@ -312,6 +327,11 @@ class EvolutionApiTests(ApiTestCase):
     def setUp(self):
         super().setUp()
         config.settings.evolution_run_tests = False
+        self.patches = [mock.patch('app.evolution.run_tests', return_value=(True, 'Suite simulée pour le test HTTP')),
+                        mock.patch('app.evolution.source_revision', return_value='b1')]
+        for patcher in self.patches:
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def test_propose_list_approve_flow(self):
         use_router(ScriptedProvider(["```json\n" + json.dumps(self.PROPOSAL) + "\n```"]))
@@ -347,7 +367,7 @@ class EvolutionApiTests(ApiTestCase):
         pid = self.api("GET", "/api/evolution").json()["proposals"][0]["id"]
         self.assertEqual(self.api("POST", f"/api/evolution/{pid}/reject").json()["status"], "rejected")
         self.assertEqual(self.api("POST", "/api/evolution/999/reject").status, 404)
-        self.assertEqual(self.api("POST", "/api/evolution/999/approve").status, 400)
+        self.assertEqual(self.api("POST", "/api/evolution/999/approve").status, 409)
 
     def test_failed_analysis_is_visible_in_job_status(self):
         use_router(ScriptedProvider([LLMError("panne", 500, "x")]))

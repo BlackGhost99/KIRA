@@ -27,6 +27,10 @@ PROTECTED_PATHS = frozenset(
         "app/devices.py",
         "app/tools/device_tools.py",
         "app/main.py",
+        "app/approvals.py",
+        "app/privacy.py",
+        "app/backup.py",
+        "tests/test_continuity.py",
         # les tests qui vérifient les garde-fous du cœur : on ne peut pas les affaiblir pour faire passer un changement
         "tests/test_devices.py",
         "tests/test_device_tools.py",

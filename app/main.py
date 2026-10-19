@@ -6,6 +6,7 @@ FICHIER PROTÉGÉ : il porte l'authentification et les en-têtes de sécurité.
 from __future__ import annotations
 
 import logging
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from starlette.middleware import Middleware
 from starlette.routing import Mount
 from starlette.staticfiles import StaticFiles
 
-from . import VERSION, api, audit, db, veille
+from . import VERSION, api, audit, db, veille, jobs
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 
@@ -46,7 +47,7 @@ class SecurityHeaders:
                     b"x-content-type-options": b"nosniff",
                     b"referrer-policy": b"no-referrer",
                     b"x-frame-options": b"DENY",
-                    b"permissions-policy": b"camera=(), microphone=(), geolocation=()",
+                    b"permissions-policy": b"camera=(), microphone=(self), geolocation=()",
                 }
                 if path in NO_CACHE_PATHS:
                     extra[b"cache-control"] = b"no-cache"
@@ -65,8 +66,15 @@ async def lifespan(app):
     logging.basicConfig(level=logging.INFO)
     db.init_db()
     veille.seed_defaults()
+    jobs.install_handlers()
+    jobs.recover()
+    stop = threading.Event()
+    watcher = threading.Thread(target=jobs.watch, args=(stop,), daemon=True)
+    watcher.start()
     audit.log("startup", {"version": VERSION})
     yield
+    stop.set()
+    watcher.join(timeout=2)
 
 
 app = Starlette(

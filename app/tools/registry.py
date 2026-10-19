@@ -13,6 +13,8 @@ MAX_RESULT_CHARS = 9000
 @dataclass
 class ToolContext:
     conversation_id: str = ""
+    origin_message: int | None = None
+    project_id: str = ""
     files: list[dict] = field(default_factory=list)  # fichiers produits pendant le tour
     tainted: bool = False       # du contenu venu d'Internet a été lu pendant ce tour : il peut contenir un piège
     private_data: bool = False  # des données de la machine de Brice ont été lues pendant ce tour : elles ne sortent pas

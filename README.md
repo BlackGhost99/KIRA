@@ -189,3 +189,5 @@ des archives et une identité persistante commune aux appareils. Son activation,
 ses tests et ses limites sont décrits dans [docs/memory-v3.md](docs/memory-v3.md).
 
 Le [routeur et les sessions V3](docs/router-auth-v3.md) ajoutent les secours gratuits, les modes de routage et les cookies HttpOnly révocables. Les comptes gratuits Gemini/Groq doivent être déclarés explicitement ; la mise à jour impose une nouvelle connexion navigateur.
+
+La [continuité V4](docs/continuity-v4.md) ajoute projets, tâches persistantes, mémoire vérifiable, documents/OCR, révisions, accords exacts, évaluations, voix sur demande et sauvegarde restaurable. Les limites et étapes d’essai terrain y sont précisées.

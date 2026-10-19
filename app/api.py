@@ -342,6 +342,7 @@ def h_conversation_delete(ctx: Ctx):
     conv = _conversation_or_404(ctx.path["id"])
     get_db().run("DELETE FROM messages WHERE conversation_id = ?", [conv["id"]])
     get_db().run("DELETE FROM conversations WHERE id = ?", [conv["id"]])
+    get_db().run('UPDATE memories SET origin_conversation = NULL, origin_message = NULL WHERE origin_conversation = ?', [conv['id']])
     audit.log("conversation_deleted", {"id": conv["id"]}, actor="owner")
     return {"ok": True}
 
@@ -359,7 +360,7 @@ def h_chat(ctx: Ctx):
 
     def work() -> None:
         try:
-            for event in agent.run_turn(conversation_id, message, tier):
+            for event in agent.run_turn(conversation_id, message, tier, ctx.body.get("project_id") or None):
                 events.put(event)
         except Exception as exc:  # noqa: BLE001
             audit.log("chat_stream_error", {"error": f"{type(exc).__name__}: {exc}"[:300]})
@@ -405,6 +406,12 @@ def h_feedback(ctx: Ctx):
 
 # -- mémoire -------------------------------------------------------------
 def h_memory_list(ctx: Ctx):
+    from . import privacy
+    with privacy.scope(ctx.query.get('include_private') == '1'):
+        return _memory_list(ctx)
+
+
+def _memory_list(ctx: Ctx):
     q = ctx.query.get("q", "").strip()
     kind = ctx.query.get("kind", "")
     limit = ctx.int_query("limit", 100, 1, 300)
@@ -419,8 +426,10 @@ def h_memory_list(ctx: Ctx):
 
 
 def h_memory_create(ctx: Ctx):
+    if 'private' in ctx.body and not isinstance(ctx.body['private'], bool):
+        raise ApiError(400, 'Réglage privé invalide.')
     item = memory.add(ctx.body.get("kind", "note"), ctx.text("content", 4000), str(ctx.body.get("tags", "")), source="manuel",
-                      importance=ctx.body.get("importance", 0.5), confidence=ctx.body.get("confidence", 1.0))
+                      importance=ctx.body.get("importance", 0.5), confidence=ctx.body.get("confidence", 1.0), private=ctx.body.get("private", False))
     audit.log("memory_added", {"id": item["id"]}, actor="owner")
     return item
 
@@ -429,12 +438,14 @@ def h_memory_patch(ctx: Ctx):
     mid = ctx.id()
     if not memory.get(mid):
         raise ApiError(404, "Souvenir introuvable.")
+    if ctx.body.get('private') is False and memory.get(mid).get('private'):
+        _require_recent(ctx)
     item = memory.update(
         mid,
         content=ctx.text("content", 4000) if "content" in ctx.body else None,
         kind=ctx.body.get("kind"),
         tags=str(ctx.body["tags"]) if "tags" in ctx.body else None,
-        importance=ctx.body.get("importance"), confidence=ctx.body.get("confidence"), status=ctx.body.get("status"),
+        importance=ctx.body.get("importance"), confidence=ctx.body.get("confidence"), status=ctx.body.get("status"), evidence_status=ctx.body.get("evidence_status"), private=ctx.body.get("private"),
     )
     audit.log("memory_updated", {"id": mid}, actor="owner")
     return item
@@ -533,14 +544,17 @@ def h_evo_list(ctx: Ctx):
 
 def h_evo_propose(ctx: Ctx):
     goal = ctx.text("goal", 1500) if "goal" in ctx.body else ""
-    started = jobs.start("evolution", lambda: evolution.propose(goal, trigger="manual"))
+    started = jobs.start("evolution", None, kind="evolution", payload={"goal": goal})
     return JSONResponse({"started": started, "message": "Analyse lancée (1 à 3 minutes)." if started else
                          "Une analyse est déjà en cours."}, status_code=202)
 
 
 def h_evo_approve(ctx: Ctx):
     _require_recent(ctx)
-    return evolution.approve(ctx.id())
+    token = ctx.text('approval_hash', 100)
+    if len(token) != 64:
+        raise ApiError(409, 'Actualisez la proposition avant de valider.')
+    return evolution.approve(ctx.id(), token)
 
 
 def h_evo_reject(ctx: Ctx):
@@ -626,7 +640,10 @@ def h_action_get(ctx: Ctx):
 
 def h_action_approve(ctx: Ctx):
     _require_recent(ctx)
-    return devices.approve(ctx.id())
+    token = ctx.text('approval_hash', 100)
+    if len(token) != 64:
+        raise ApiError(409, 'Actualisez la demande avant de valider.')
+    return devices.approve(ctx.id(), token)
 
 
 def h_action_deny(ctx: Ctx):
@@ -764,7 +781,8 @@ def routes() -> list[Route]:
     def r(path: str, fn, methods: list[str], access: str = "owner") -> Route:
         return Route(path, endpoint(fn, access), methods=methods)
 
-    return [
+    from . import workspace_api
+    return [*workspace_api.routes(endpoint, _require_recent, ApiError),
         r("/healthz", h_health, ["GET"], "none"),
         r("/api/auth/login", h_login, ["POST"], "none"),
         r("/api/auth/refresh", h_refresh, ["POST"], "none"),

@@ -140,7 +140,7 @@ textarea { resize: vertical; line-height: 1.45; }
 
 .nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   height: calc(var(--nav-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
   background: var(--panel); border-top: 1px solid var(--line);
 }
@@ -464,3 +464,9 @@ body.typing .toasts { bottom: 80px; }
 
 #auth-reauth { max-width: 420px; width: calc(100% - 32px); margin: auto; color: inherit; background: var(--bg); }
 #auth-reauth::backdrop { background: rgba(0, 0, 0, .55); }
+
+#project-detail textarea { width:100%; }
+.voice-controls { padding:6px; font-size:13px; }
+#chat-project { margin:0 16px; }
+
+.document-text { white-space:pre-wrap; overflow-wrap:anywhere; max-height:400px; overflow:auto; }

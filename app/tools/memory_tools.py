@@ -25,7 +25,8 @@ from .registry import ToolContext, register
 def remember(args: dict, ctx: ToolContext) -> str:
     if args.get("kind") in ("identity", "knowledge"):
         return "L'identité se modifie depuis l'interface propriétaire ; les connaissances web passent par la veille."
-    item = memory.add(args.get("kind") or "fact", args.get("content", ""), args.get("tags", ""), source="chat")
+    item = memory.add(args.get("kind") or "fact", args.get("content", ""), args.get("tags", ""), source="chat", origin_conversation=ctx.conversation_id or None,
+                      origin_message=ctx.origin_message, private=ctx.private_data)
     return f"Enregistré (#{item['id']}, {item['kind']})."
 
 

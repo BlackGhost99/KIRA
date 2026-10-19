@@ -10,7 +10,7 @@ import re
 import unicodedata
 import uuid
 
-from . import audit, config, embeddings
+from . import audit, config, embeddings, privacy
 from .db import get_db, jdump, jload, now_iso
 
 KINDS = ("profile", "fact", "knowledge", "note", "identity", "episodic", "procedural", "project", "goal", "experience", "relationship")
@@ -74,20 +74,27 @@ def _locked(memory_id: int) -> dict | None:
 
 
 def add(kind: str, content: str, tags: str = "", source: str = "", *, importance: float = 0.5,
-        confidence: float = 1.0) -> dict:
+        confidence: float = 1.0, evidence_status: str | None = None,
+        origin_conversation: str | None = None, origin_message: int | None = None, private: bool | None = None) -> dict:
     kind = kind if kind in KINDS else "fact"
     content = (content or "").strip()
     if not content:
         raise ValueError("Le contenu est vide.")
     db = get_db()
     importance, confidence = _weight(importance), _weight(confidence)
+    evidence_status = evidence_status or ("inferred" if source in ("chat", "consolidation") else "confirmed" if source in ("manuel", "manual") else "unverified")
+    if evidence_status not in ("confirmed", "inferred", "unverified"):
+        raise ValueError("Statut de preuve inconnu.")
+    private = privacy.is_private() if private is None else bool(private)
     with db.transaction():
-        existing = db.q1("SELECT * FROM memories WHERE kind = ? AND content = ? AND status = 'active'", [kind, content])
+        existing = db.q1("SELECT * FROM memories WHERE kind = ? AND content = ? AND private = ? AND status = 'active'", [kind, content, int(private)])
         if existing:
             return existing
         ts = now_iso()
         new_id = db.insert("memories", {"kind": kind, "content": content, "tags": tags or "", "source": source or "",
-                           "importance": importance, "confidence": confidence, "created_at": ts, "updated_at": ts})
+                           "importance": importance, "confidence": confidence, "evidence_status": evidence_status,
+                           "origin_conversation": origin_conversation, "origin_message": origin_message, "private": int(private),
+                           "created_at": ts, "updated_at": ts})
         item = get(new_id)
         _record(item)
     index_item(new_id)
@@ -100,7 +107,7 @@ def get(memory_id: int) -> dict | None:
 
 
 def update(memory_id: int, content: str | None = None, kind: str | None = None, tags: str | None = None,
-           *, importance: float | None = None, confidence: float | None = None, status: str | None = None) -> dict | None:
+           *, importance: float | None = None, confidence: float | None = None, status: str | None = None, evidence_status: str | None = None, private: bool | None = None) -> dict | None:
     values: dict = {"updated_at": now_iso()}
     if content is not None:
         if not content.strip():
@@ -113,6 +120,14 @@ def update(memory_id: int, content: str | None = None, kind: str | None = None, 
     for name, value in (("importance", importance), ("confidence", confidence)):
         if value is not None:
             values[name] = _weight(value)
+    if private is not None:
+        if not isinstance(private, bool):
+            raise ValueError('Le réglage privé doit être un booléen.')
+        values['private'] = int(private)
+    if evidence_status is not None:
+        if evidence_status not in ("confirmed", "inferred", "unverified"):
+            raise ValueError("Statut de preuve inconnu.")
+        values["evidence_status"] = evidence_status
     if status is not None:
         if status not in ("active", "archived"):
             raise ValueError("État de souvenir invalide.")
@@ -130,9 +145,9 @@ def update(memory_id: int, content: str | None = None, kind: str | None = None, 
         db.update("memories", memory_id, values)
         item = get(memory_id)
         _record(item)
-        if content is not None:
+        if content is not None or private is not None:
             db.run("DELETE FROM memory_embeddings WHERE memory_id = ?", [memory_id])
-    if content is not None:
+    if content is not None or private is not None:
         index_item(memory_id)
     audit.log("memory_revised", {"id": memory_id, "version": item["version"]})
     return item
@@ -165,7 +180,8 @@ def supersede(memory_id: int, content: str, *, kind: str | None = None, source: 
             _record(old)
         ts = now_iso()
         new_id = db.insert("memories", {"kind": kind or old["kind"], "content": content, "tags": old["tags"], "source": source,
-                           "importance": old["importance"], "confidence": old["confidence"],
+                           "importance": old["importance"], "confidence": old["confidence"], "private": old["private"],
+                           "evidence_status": "confirmed", "origin_conversation": old["origin_conversation"], "origin_message": old["origin_message"],
                            "created_at": ts, "updated_at": ts})
         item = get(new_id)
         _record(item)
@@ -203,7 +219,7 @@ def counts(status: str = "active") -> dict[str, int]:
 
 
 def profile(limit: int = 40) -> list[dict]:
-    return get_db().q("SELECT * FROM memories WHERE kind = 'profile' AND status = 'active' ORDER BY id DESC LIMIT ?", [limit])
+    return get_db().q("SELECT * FROM memories WHERE kind = 'profile' AND status = 'active' AND (private = 0 OR ? = 1) ORDER BY id DESC LIMIT ?", [int(privacy.is_private()), limit])
 
 
 def _lexical(query: str, kinds: tuple[str, ...], limit: int, status: str = "active") -> list[dict]:
@@ -212,6 +228,8 @@ def _lexical(query: str, kinds: tuple[str, ...], limit: int, status: str = "acti
     qt = tokens(query)
     condition = " AND status = ?" if status else ""
     status_params = [status] if status else []
+    if not privacy.is_private():
+        condition += " AND private = 0"
     if not qt:
         marks = ", ".join("?" for _ in kinds)
         return db.q(f"SELECT * FROM memories WHERE kind IN ({marks}){condition} ORDER BY id DESC LIMIT ?", [*kinds, *status_params, limit])
@@ -243,7 +261,7 @@ def index_item(memory_id: int) -> bool:
     if db.kind == "postgres" and not db.vector_schema:
         return False  # pas de transmission inutile tant que pgvector n'est pas activé
     item = get(memory_id)
-    if not item or item["status"] != "active":
+    if not item or item["status"] != "active" or item.get("private"):
         return False
     try:
         vector = embeddings.embed(item["content"])
@@ -268,7 +286,7 @@ def backfill(limit: int = 50) -> dict:
     """Petit lot reprenable des anciens souvenirs, sans recalcul des vecteurs valides."""
     db = get_db()
     rows = db.q("SELECT m.* FROM memories m LEFT JOIN memory_embeddings e ON e.memory_id = m.id "
-                "WHERE m.status = 'active' AND (e.memory_id IS NULL OR e.model != ? OR e.dimensions != ?) "
+                "WHERE m.status = 'active' AND m.private = 0 AND (e.memory_id IS NULL OR e.model != ? OR e.dimensions != ?) "
                 "ORDER BY m.id LIMIT ?", [config.settings.embedding_model, config.settings.embedding_dimensions, min(max(limit, 1), 100)])
     indexed = 0
     for row in rows:
@@ -289,7 +307,7 @@ def semantic_status() -> dict:
 
 def _semantic(query: str, kinds: tuple[str, ...], limit: int) -> list[dict]:
     db = get_db()
-    if not embeddings.configured() or (db.kind == "postgres" and not db.vector_schema):
+    if privacy.is_private() or not embeddings.configured() or (db.kind == "postgres" and not db.vector_schema):
         return []
     s = config.settings
     # Évite tout appel à l'endpoint si aucun souvenir compatible n'est indexé.
@@ -300,7 +318,7 @@ def _semantic(query: str, kinds: tuple[str, ...], limit: int) -> list[dict]:
     except embeddings.EmbeddingUnavailable:
         return []
     marks = ", ".join("?" for _ in kinds)
-    where = f"m.kind IN ({marks}) AND m.status = 'active' AND e.model = ? AND e.dimensions = ?"
+    where = f"m.kind IN ({marks}) AND m.status = 'active' AND m.private = 0 AND e.model = ? AND e.dimensions = ?"
     params = [*kinds, s.embedding_model, len(vector)]
     if db.kind == "postgres":
         # Embeddings non typés en dimensions pour permettre de changer de modèle.
@@ -333,7 +351,7 @@ def search(query: str, kinds: tuple[str, ...] | None = None, limit: int = 8, *, 
     lexical = _lexical(query, kinds, max(limit * 3, 24), status)
     if not tokens(query) or status != "active":
         return lexical[:limit]
-    semantic = _semantic(query, kinds, max(limit * 3, 24))
+    semantic = [] if privacy.is_private() else _semantic(query, kinds, max(limit * 3, 24))
     scores, items = {}, {}
     for candidates in (lexical, semantic):
         for rank, row in enumerate(candidates, 1):
@@ -371,11 +389,13 @@ def search_messages(query: str, limit: int = 6) -> list[dict]:
         tsq = " | ".join(re.sub(r"\W", "", t) for t in qt if re.sub(r"\W", "", t))
         return db.q(
             "SELECT m.id, m.conversation_id, m.role, m.content, m.created_at FROM messages m "
-            "WHERE to_tsvector('french', m.content) @@ to_tsquery('french', ?) ORDER BY m.id DESC LIMIT ?",
-            [tsq, limit],
+            "WHERE (NOT EXISTS (SELECT 1 FROM conversations c WHERE c.id = m.conversation_id AND c.private = 1) OR ? = 1) AND to_tsvector('french', m.content) @@ to_tsquery('french', ?) ORDER BY m.id DESC LIMIT ?",
+            [int(privacy.is_private()), tsq, limit],
         )
     rows = db.q(
-        "SELECT id, conversation_id, role, content, created_at FROM messages ORDER BY id DESC LIMIT 3000"
+        "SELECT m.id, m.conversation_id, m.role, m.content, m.created_at FROM messages m WHERE "
+        "(NOT EXISTS (SELECT 1 FROM conversations c WHERE c.id = m.conversation_id AND c.private = 1) OR ? = 1) "
+        "ORDER BY m.id DESC LIMIT 3000", [int(privacy.is_private())]
     )
     scored = [(_score(qt, r["content"]), r) for r in rows]
     scored = [(s, r) for s, r in scored if s > 0]

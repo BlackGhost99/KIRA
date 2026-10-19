@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 
 import requests
 
-from . import config
+from . import config, privacy
 
 
 class EmbeddingUnavailable(RuntimeError):
@@ -38,6 +38,8 @@ def validate(vector, dimensions: int) -> list[float]:
 
 def embed(text: str) -> list[float]:
     s = config.settings
+    if privacy.is_private():
+        raise EmbeddingUnavailable("Embeddings suspendus pour ce contexte privé.")
     if not configured():
         raise EmbeddingUnavailable("Service d'embeddings non configuré.")
     url = urlsplit(s.embedding_url)

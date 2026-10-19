@@ -429,6 +429,7 @@ def decide(device: dict, category: str, tainted: bool = False) -> tuple[str, str
 
 
 def _view_action(row: dict, full: bool = True) -> dict:
+    from .approvals import action_digest
     args = jload(row.get("args"), {})
     try:
         summary, detail = describe(row["kind"], args)
@@ -437,6 +438,7 @@ def _view_action(row: dict, full: bool = True) -> dict:
     result = row.get("result") or ""
     return {
         "id": row["id"],
+        "approval_hash": action_digest(row),
         "device_id": row["device_id"],
         "device_name": row.get("device_name") or "",
         "kind": row["kind"],
@@ -521,11 +523,20 @@ def list_actions(device_id: int | None = None, limit: int = 30) -> list[dict]:
     return [_view_action(r, full=False) for r in rows]
 
 
-def approve(action_id: int) -> dict:
+def approve(action_id: int, expected_hash: str | None = None) -> dict:
+    with get_db().transaction():
+        return _approve_locked(action_id, expected_hash)
+
+
+def _approve_locked(action_id, expected_hash):
     expire_stale()
-    row = get_db().q1("SELECT * FROM device_actions WHERE id = ?", [action_id])
+    row = get_db().q1("SELECT * FROM device_actions WHERE id = ?" + (" FOR UPDATE" if get_db().kind == "postgres" else ""), [action_id])
     if not row:
         raise DeviceError("Demande introuvable.")
+    if expected_hash is not None:
+        from .approvals import action_digest
+        if expected_hash != action_digest(row):
+            raise DeviceError("La demande a changé : relisez-la avant de valider.")
     if row["status"] != "pending":
         raise DeviceError(f"Cette demande est déjà « {row['status']} ».")
     device = get_device(row["device_id"])

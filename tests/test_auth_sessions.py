@@ -123,14 +123,14 @@ class SessionTests(KiraTestCase):
         session = db.get_db().q1("SELECT * FROM owner_sessions")
         db.get_db().update("owner_sessions", session["id"], {"reauth_at": time.time() - 3600})
         with patch("app.api.evolution.approve", return_value={"ok": True}) as approve:
-            self.assertEqual(call(app, "POST", "/api/evolution/1/approve", {}, headers=h).status, 428)
+            self.assertEqual(call(app, "POST", "/api/evolution/1/approve", {"approval_hash": "a" * 64}, headers=h).status, 428)
             approve.assert_not_called()
             bad = call(app, "POST", "/api/auth/reauth", {"password": "wrong"}, headers=h)
             self.assertEqual(bad.status, 401)
             self.assertEqual(call(app, "GET", "/api/auth/me", headers=h).status, 200)
             self.assertEqual(call(app, "POST", "/api/auth/reauth", {"password": config.settings.owner_password}, headers=h).status, 200)
-            self.assertEqual(call(app, "POST", "/api/evolution/1/approve", {}, headers=h).status, 200)
-            approve.assert_called_once_with(1)
+            self.assertEqual(call(app, "POST", "/api/evolution/1/approve", {"approval_hash": "a" * 64}, headers=h).status, 200)
+            approve.assert_called_once_with(1, "a" * 64)
 
     def test_expired_refresh_cannot_be_renewed(self):
         r = self.login()

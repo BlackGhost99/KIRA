@@ -155,6 +155,43 @@ SCHEMA = [
         token_hash TEXT PRIMARY KEY,
         session_id TEXT NOT NULL REFERENCES owner_sessions(id) ON DELETE CASCADE,
         consumed_at DOUBLE PRECISION NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS background_jobs (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, kind TEXT NOT NULL,
+        payload TEXT NOT NULL DEFAULT '{}', state TEXT NOT NULL DEFAULT 'queued',
+        attempts INTEGER NOT NULL DEFAULT 0, progress INTEGER NOT NULL DEFAULT 0,
+        result TEXT NOT NULL DEFAULT '{}', error TEXT NOT NULL DEFAULT '',
+        lease_owner TEXT, lease_until DOUBLE PRECISION NOT NULL DEFAULT 0,
+        cancel_requested INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
+    "CREATE INDEX IF NOT EXISTS ix_jobs_claim ON background_jobs(state, lease_until)",
+    """CREATE TABLE IF NOT EXISTS projects (
+        id TEXT PRIMARY KEY, title TEXT NOT NULL, goal TEXT NOT NULL DEFAULT '',
+        context TEXT NOT NULL DEFAULT '', state TEXT NOT NULL DEFAULT 'active',
+        private INTEGER NOT NULL DEFAULT 1, version INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS project_tasks (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'todo', result TEXT NOT NULL DEFAULT '',
+        version INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
+    "CREATE INDEX IF NOT EXISTS ix_project_tasks ON project_tasks(project_id, state)",
+    """CREATE TABLE IF NOT EXISTS documents (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        file_id TEXT NOT NULL REFERENCES files(id), name TEXT NOT NULL, extension TEXT NOT NULL,
+        content_hash TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'queued', error TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL, UNIQUE(project_id, content_hash))""",
+    """CREATE TABLE IF NOT EXISTS document_pages (
+        id {PK}, document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+        number INTEGER NOT NULL, location TEXT NOT NULL, content TEXT NOT NULL,
+        UNIQUE(document_id, number))""",
+    "CREATE INDEX IF NOT EXISTS ix_document_pages ON document_pages(document_id, number)",
+    """CREATE TABLE IF NOT EXISTS learning_cards (
+        id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        question TEXT NOT NULL, answer TEXT NOT NULL, source TEXT NOT NULL DEFAULT '',
+        due_at DOUBLE PRECISION NOT NULL, interval_days INTEGER NOT NULL DEFAULT 0,
+        attempts INTEGER NOT NULL DEFAULT 0, correct INTEGER NOT NULL DEFAULT 0,
+        version INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL)""",
+    "CREATE INDEX IF NOT EXISTS ix_learning_due ON learning_cards(project_id, due_at)",
+    """CREATE TABLE IF NOT EXISTS evaluation_runs (
+        id TEXT PRIMARY KEY, revision TEXT NOT NULL, report TEXT NOT NULL, created_at TEXT NOT NULL)""",
     # --- le « cœur » : appareils de Brice, codes d'appairage et file d'actions ---
     """CREATE TABLE IF NOT EXISTS devices (
         id {PK},
@@ -368,6 +405,7 @@ class Database:
         for stmt in SCHEMA:
             self.run(stmt.replace("{PK}", pk).replace("{BLOB}", blob))
         self._migrate_memories()
+        self._migrate_continuity()
         if self.kind == "postgres":
             self.run("ALTER TABLE llm_usage ADD COLUMN IF NOT EXISTS cost_class TEXT NOT NULL DEFAULT 'paid'")
         elif 'cost_class' not in {r['name'] for r in self.q("PRAGMA table_info(llm_usage)")}:
@@ -375,7 +413,7 @@ class Database:
         if self.kind == "postgres":
             # L'API Render utilise le rôle propriétaire des tables. Les rôles de
             # l'API publique Supabase ne doivent pas lire les souvenirs directement.
-            for table in ("memories", "memory_history", "memory_embeddings", "kv", "owner_sessions", "owner_refresh_used"):
+            for table in [re.search(r"CREATE TABLE IF NOT EXISTS (\w+)", stmt).group(1) for stmt in SCHEMA if "CREATE TABLE IF NOT EXISTS" in stmt]:
                 self.run(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
             for stmt in POSTGRES_EXTRA:
                 try:
@@ -389,6 +427,23 @@ class Database:
                 schema = '"' + ext['nspname'].replace('"', '""') + '"'
                 self.run(f"ALTER TABLE memory_embeddings ADD COLUMN IF NOT EXISTS embedding {schema}.vector")
                 self.vector_schema = schema
+
+    def _migrate_continuity(self):
+        additions = {
+            "memories": {"evidence_status": "TEXT NOT NULL DEFAULT 'unverified'", "origin_conversation": "TEXT",
+                         "origin_message": "BIGINT", "private": "INTEGER NOT NULL DEFAULT 0"},
+            "conversations": {"private": "INTEGER NOT NULL DEFAULT 0", "project_id": "TEXT"},
+            "proposals": {"approval_hash": "TEXT NOT NULL DEFAULT ''", "artifact": "TEXT NOT NULL DEFAULT '{}'",
+                          "evaluation": "TEXT NOT NULL DEFAULT '{}'"},
+            "device_actions": {"approval_hash": "TEXT NOT NULL DEFAULT ''"},
+        }
+        for table, columns in additions.items():
+            present = {r['name'] for r in self.q(f"PRAGMA table_info({table})")} if self.kind == "sqlite" else set()
+            for name, definition in columns.items():
+                if self.kind == "postgres":
+                    self.run(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {name} {definition}")
+                elif name not in present:
+                    self.run(f"ALTER TABLE {table} ADD COLUMN {name} {definition}")
 
     def _migrate_memories(self):
         """Migration additive et idempotente, y compris pour les bases V2 existantes."""

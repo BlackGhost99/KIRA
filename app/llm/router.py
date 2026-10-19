@@ -33,7 +33,7 @@ class Router:
         return value if value in MODES else "QUALITY"
 
     def trusted(self, p: Provider) -> bool:
-        return p.name in {n.strip() for n in config.settings.llm_trusted_providers.split(",") if n.strip()}
+        return p.name in {n.strip() for n in get_db().kv_get("llm_trusted_providers", config.settings.llm_trusted_providers).split(",") if n.strip()}
 
     def _ordered(self) -> list[Provider]:
         rank = {name.strip(): i for i, name in enumerate(config.settings.llm_priority.split(","))}

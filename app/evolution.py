@@ -25,6 +25,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from . import audit, config, net
+from .approvals import proposal_digest
 from .db import get_db, jdump, jload, now_iso
 from .llm import get_router
 from .principles import ALLOWED_PREFIXES, FORBIDDEN_PREFIXES, PROTECTED_PATHS
@@ -208,12 +209,12 @@ def usage_report() -> str:
     )
     if errors:
         lines.append("\nDernières erreurs :")
-        lines += [f"- {e['action']}: {clip(e['details'], 260)}" for e in errors]
+        lines += [f"- {e['action']}: erreur journalisée (détails réservés au propriétaire)" for e in errors]
     bad = db.q(
         "SELECT m.content AS answer, m.feedback_note AS note, "
         "(SELECT u.content FROM messages u WHERE u.conversation_id = m.conversation_id AND u.id < m.id "
         " AND u.role = 'user' ORDER BY u.id DESC LIMIT 1) AS question "
-        "FROM messages m WHERE m.feedback = -1 ORDER BY m.id DESC LIMIT 8"
+        "FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE c.private = 0 AND m.feedback = -1 ORDER BY m.id DESC LIMIT 8"
     )
     if bad:
         lines.append("\nRéponses jugées mauvaises par Brice (pouce vers le bas) :")
@@ -256,6 +257,16 @@ def build_prompt(goal: str) -> str:
 
 
 # -- proposition -----------------------------------------------------------
+def source_revision():
+    revision = os.environ.get('RENDER_GIT_COMMIT', '')
+    if not revision:
+        try:
+            revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, timeout=5).strip()
+        except (OSError, subprocess.SubprocessError):
+            return ''
+    return revision if re.fullmatch(r'[0-9a-f]{40}', revision) else ''
+
+
 def propose(goal: str = "", trigger: str = "manual") -> dict:
     router = get_router()
     system = SYSTEM.format(owner=config.settings.owner_name, protected=", ".join(sorted(PROTECTED_PATHS)))
@@ -301,10 +312,15 @@ def propose(goal: str = "", trigger: str = "manual") -> dict:
             "tests_ok": None if candidate["tests_ok"] is None else int(candidate["tests_ok"]),
             "tests_output": candidate["tests_output"],
             "status": "draft",
+            "artifact": jdump({"files": files, "base_revision": source_revision()}),
+            "evaluation": jdump({"tests_passed": candidate["tests_ok"], "validated_files": sorted(files),
+                                 "method": "suite unittest sur une copie du code", "response_quality": "à évaluer en usage réel"}),
             "created_at": ts,
             "updated_at": ts,
         },
     )
+    row = get_db().q1("SELECT * FROM proposals WHERE id = ?", [pid])
+    get_db().update('proposals', pid, {'approval_hash': proposal_digest(row)})
     audit.log("evolution_proposed", {"proposal": pid, "files": sorted(files), "tests_ok": candidate["tests_ok"]})
     return {"status": "created", "id": pid}
 
@@ -314,6 +330,8 @@ def _public(row: dict) -> dict:
     changes = jload(row.get("changes"), [])
     return {
         "id": row["id"],
+        "approval_hash": row.get("approval_hash", ""),
+        "evaluation": jload(row.get("evaluation"), {}),
         "title": row["title"],
         "rationale": row["rationale"],
         "trigger": row["trigger_kind"],
@@ -374,9 +392,17 @@ def open_pr(row: dict) -> dict:
         )
     repo, base = s.github_repo, s.github_base_branch
     shas: dict[str, str] = {}
+    artifact = jload(row.get('artifact'), {})
+    frozen = artifact.get('files')
+    revision = artifact.get('base_revision')
+    if not frozen or not revision:
+        raise EvolutionError("Révision testée absente : régénérez la proposition.")
+    ref = _gh("GET", f"/repos/{repo}/git/ref/heads/{base}")
+    if ref.status_code != 200 or ref.json().get('object', {}).get('sha') != revision:
+        raise EvolutionError("Le dépôt a changé depuis la proposition : relancez l'analyse et les tests.")
 
     def read_remote(path: str) -> str | None:
-        r = _gh("GET", f"/repos/{repo}/contents/{quote(path)}", params={"ref": base})
+        r = _gh("GET", f"/repos/{repo}/contents/{quote(path)}", params={"ref": revision})
         if r.status_code == 404:
             return None
         if r.status_code != 200:
@@ -386,11 +412,8 @@ def open_pr(row: dict) -> dict:
         return base64.b64decode(data["content"]).decode("utf-8")
 
     files, errors = apply_changes(jload(row["changes"], []), read_remote)
-    if errors:
-        raise EvolutionError("Le dépôt a changé depuis la proposition : " + " ; ".join(errors))
-    ref = _gh("GET", f"/repos/{repo}/git/ref/heads/{base}")
-    if ref.status_code != 200:
-        raise EvolutionError(f"GitHub : branche « {base} » introuvable (HTTP {ref.status_code}).")
+    if errors or files != frozen:
+        raise EvolutionError("Le dépôt a changé depuis la proposition ou le contenu diffère de la version testée.")
     branch = f"kira/evolution-{row['id']}-{_slug(row['title'])}"
     made = _gh("POST", f"/repos/{repo}/git/refs", json={"ref": f"refs/heads/{branch}", "sha": ref.json()["object"]["sha"]})
     if made.status_code not in (200, 201):
@@ -424,14 +447,16 @@ def open_pr(row: dict) -> dict:
     return {"branch": branch, "pr_url": pr.json()["html_url"]}
 
 
-def approve(pid: int) -> dict:
+def approve(pid: int, expected_hash: str | None = None) -> dict:
     row = get_db().q1("SELECT * FROM proposals WHERE id = ?", [pid])
     if not row:
         raise EvolutionError("Proposition introuvable.")
     if row["status"] != "draft":
         raise EvolutionError(f"Cette proposition est déjà « {row['status']} ».")
-    if row["tests_ok"] == 0:
-        raise EvolutionError("Les tests échouent avec cette proposition : elle ne peut pas être approuvée.")
+    if row["tests_ok"] != 1:
+        raise EvolutionError("Les tests échouent ou ne sont pas exécutés : cette proposition ne peut pas être approuvée.")
+    if row.get('approval_hash') != proposal_digest(row) or expected_hash is not None and expected_hash != row['approval_hash']:
+        raise EvolutionError("La proposition a changé : relisez-la avant de valider.")
     audit.log("evolution_approved", {"proposal": pid}, actor="owner")
     try:
         result = open_pr(row)

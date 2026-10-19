@@ -132,7 +132,7 @@ class KiraTestCase(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self._tmp, True)
         self.addCleanup(setattr, config, "settings", config.settings)
         config.settings = config.Settings(
-            owner_password="mot-de-passe-test", secret_key="cle-secrete-test", cron_token="jeton-cron-test"
+            owner_password="mot-de-passe-test", secret_key="cle-secrete-test", cron_token="jeton-cron-test", llm_trusted_providers="fake"
         )
         self.addCleanup(self._close_db)
         db.configure(f"sqlite:///{self._tmp}/test.db")
