@@ -1,7 +1,7 @@
 """Une analyse volumineuse ne doit pas rendre le fournisseur indisponible pour le chat."""
 import json
 
-from app import config, evolution
+from app import audit, config, evolution, jobs
 from app.llm.base import LLMError, LLMUnavailable
 from app.llm.errors import http_error
 from tests.helpers import FakeResponse, KiraTestCase, ScriptedProvider, use_router
@@ -113,3 +113,27 @@ class CompactEvolutionTests(KiraTestCase):
             evolution.propose()
         for call in provider.calls:
             self.assert_bounded(call)
+
+class BackgroundCapacityMessageTests(KiraTestCase):
+    def run_failed_job(self, error):
+        from tests.test_continuity import wait_all
+        kind = 'unit-capacity-message'
+        def fail(payload, ctx):
+            raise error
+        jobs.register(kind, fail)
+        self.addCleanup(jobs._handlers.pop, kind, None)
+        self.assertTrue(jobs.start('capacity-message', kind=kind))
+        wait_all()
+        item = jobs.status()['items'][0]
+        self.assertEqual(item['state'], 'failed')
+        self.assertNotIn('PRIVATE SECRET', item['error'])
+        self.assertNotIn('PRIVATE SECRET', str(audit.recent()))
+        return item['error']
+
+    def test_capacity_failure_has_safe_actionable_background_message(self):
+        message = self.run_failed_job(evolution.EvolutionCapacityError('PRIVATE SECRET'))
+        self.assertIn('Analyse trop volumineuse', message)
+        self.assertIn('objectif plus petit', message)
+
+    def test_unknown_background_failure_still_redacts_its_details(self):
+        self.assertIn('traitement interrompu', self.run_failed_job(ValueError('PRIVATE SECRET')))

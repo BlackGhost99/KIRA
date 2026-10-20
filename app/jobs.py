@@ -87,6 +87,12 @@ def _execute(jid, fn=None):
         state, result, error = 'cancelled', {}, ''
     except Exception as exc:
         state, result, error = 'failed', {}, f'{type(exc).__name__}: traitement interrompu'
+        from .evolution import EvolutionCapacityError
+        from .llm.base import LLMUnavailable
+        if isinstance(exc, EvolutionCapacityError):
+            error = "Analyse trop volumineuse pour le fournisseur, même en mode compact. Choisissez un objectif plus petit ou un fournisseur disposant de plus de capacité."
+        elif isinstance(exc, LLMUnavailable):
+            error = "Aucun fournisseur d'IA disponible pour ce traitement. Consultez les réglages des fournisseurs avant de relancer."
         audit.log('job_error', {'job': row['name'], 'type': type(exc).__name__})
     finally:
         stop.set()

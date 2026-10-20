@@ -45,6 +45,11 @@ class EvolutionError(Exception):
     pass
 
 
+class EvolutionCapacityError(EvolutionError):
+    """Échec de capacité connu ; son explication publique ne contient aucun contenu fournisseur."""
+    pass
+
+
 # -- règles de périmètre ---------------------------------------------------
 def norm_path(path: str) -> str:
     return str(path or "").strip().replace("\\", "/").lstrip("/")
@@ -313,7 +318,7 @@ def propose(goal: str = "", trigger: str = "manual") -> dict:
             if not oversized:
                 raise
             if compact:
-                raise EvolutionError("Même l'analyse compacte dépasse la limite du fournisseur. Choisissez un objectif plus petit ou un fournisseur disposant de plus de capacité.") from exc
+                raise EvolutionCapacityError("Même l'analyse compacte dépasse la limite du fournisseur. Choisissez un objectif plus petit ou un fournisseur disposant de plus de capacité.") from exc
             compact = True
             messages = [{"role": "user", "content": compact_prompt(goal, system)}]
             # Une seule nouvelle tentative, avec un contexte réellement réduit.
@@ -321,7 +326,7 @@ def propose(goal: str = "", trigger: str = "manual") -> dict:
                 res = router.complete([system], messages, None, tier="deep", max_tokens=COMPACT_OUTPUT_TOKENS, purpose="evolution")
             except LLMUnavailable as retry_exc:
                 if retry_exc.errors and all('request_too_large' in error for error in retry_exc.errors):
-                    raise EvolutionError("Même l'analyse compacte dépasse la limite du fournisseur. Aucun changement n'a été proposé.") from retry_exc
+                    raise EvolutionCapacityError("Même l'analyse compacte dépasse la limite du fournisseur. Aucun changement n'a été proposé.") from retry_exc
                 raise
         data = extract_json(res.text)
         problem = ""
