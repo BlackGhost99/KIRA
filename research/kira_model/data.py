@@ -8,6 +8,7 @@ from pathlib import Path
 
 BOS, EOS, VOCAB_SIZE = 256, 257, 258
 TOKENIZER = "utf8-bytes-v1"
+MAX_CORPUS_BYTES = 16 * 1024 * 1024
 
 
 def encode(text: str, *, end: bool = True) -> list[int]:
@@ -20,7 +21,11 @@ def decode(tokens: list[int]) -> str:
 
 def read_corpus(path: Path) -> tuple[dict, str]:
     """Les autorisations sont des déclarations à vérifier humainement, pas un audit de licence."""
-    raw = path.read_bytes()
+    # Le laboratoire garde le corpus en RAM : lecture bornée pour le petit PC cible.
+    with path.open("rb") as source:
+        raw = source.read(MAX_CORPUS_BYTES + 1)
+    if len(raw) > MAX_CORPUS_BYTES:
+        raise ValueError("Corpus supérieur à 16 Mio : ce laboratoire attend un petit corpus local")
     groups: dict[str, list] = {"train": [], "validation": []}
     ids, contents = set(), set()
     for line_no, line in enumerate(raw.decode("utf-8").splitlines(), 1):

@@ -50,16 +50,47 @@ def train(args):
     rng = random.Random(args.seed)
     model = KiraSeed(cfg)  # Aucun from_pretrained, poids externes ou appel de modèle tiers.
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
-    args.output.mkdir(parents=True, exist_ok=False)  # Un nouveau run, jamais d'écrasement.
-    initial = evaluate(model, docs["validation"], cfg.context)
-    history = []
-    seen = 0
-    for step in range(1, args.steps + 1):
+    every = getattr(args, "checkpoint_every", 25)
+    if every < 1:
+        raise ValueError("checkpoint-every doit être positif")
+    signature = {"config": asdict(cfg), "corpus_sha256": corpus_hash, "seed": args.seed,
+                 "batch_size": args.batch_size, "learning_rate": args.lr,
+                 "threads": args.threads, "torch_version": str(torch.__version__),
+                 "tokenizer": TOKENIZER}
+    if getattr(args, "resume", False):
+        # Uniquement un état local de confiance. L'ancien checkpoint reste intact en cas de refus.
+        saved = torch.load(args.output / "training.pt", map_location="cpu", weights_only=True)
+        if saved.get("format") != 1 or saved.get("signature") != signature:
+            raise ValueError("Reprise incompatible : corpus, modèle, options ou version PyTorch différents")
+        start = saved["step"]
+        if args.steps <= start:
+            raise ValueError("steps doit dépasser le nombre d'étapes déjà enregistré")
+        model.load_state_dict(saved["state_dict"])
+        optimizer.load_state_dict(saved["optimizer"])
+        rng.setstate(saved["python_rng"])
+        torch.set_rng_state(saved["torch_rng"])
+        initial, history, seen = saved["initial"], saved["history"], saved["tokens_seen"]
+    else:
+        args.output.mkdir(parents=True, exist_ok=False)  # Un nouveau run, jamais d'écrasement.
+        initial = evaluate(model, docs["validation"], cfg.context)
+        start, history, seen = 0, [], 0
+
+    def save_training(step):
+        temp = args.output / "training.tmp"
+        torch.save({"format": 1, "signature": signature, "step": step,
+                    "state_dict": model.state_dict(), "optimizer": optimizer.state_dict(),
+                    "python_rng": rng.getstate(), "torch_rng": torch.get_rng_state(),
+                    "initial": initial, "history": history, "tokens_seen": seen}, temp)
+        temp.replace(args.output / "training.pt")
+
+    if not start:
+        save_training(0)
+    for step in range(start + 1, args.steps + 1):
         windows = []
         for _ in range(args.batch_size):
             tokens = rng.choice(docs["train"])["tokens"]
-            start = rng.randrange(max(1, len(tokens) - cfg.context))
-            windows.append(tokens[start:start + cfg.context + 1])
+            window_start = rng.randrange(max(1, len(tokens) - cfg.context))
+            windows.append(tokens[window_start:window_start + cfg.context + 1])
         x, y = batch(windows, cfg.context)
         model.train()
         optimizer.zero_grad(set_to_none=True)
@@ -73,6 +104,8 @@ def train(args):
         if step == 1 or step % 50 == 0 or step == args.steps:
             history.append({"step": step, "train_loss": loss.item()})
             print(json.dumps(history[-1]), flush=True)
+        if step % every == 0 or step == args.steps:
+            save_training(step)
     final = evaluate(model, docs["validation"], cfg.context)
     manifest = {
         "format": 1, "model": "kira-seed-0.1", "status": "experimental-not-an-assistant",
@@ -80,6 +113,7 @@ def train(args):
         "parameters": sum(p.numel() for p in model.parameters()),
         "torch_version": str(torch.__version__), "device": "cpu", "seed": args.seed,
         "steps": args.steps, "batch_size": args.batch_size, "learning_rate": args.lr,
+        "threads": args.threads, "checkpoint_every": every, "resumed_from_step": start,
         "tokens_seen": seen, "corpus_sha256": corpus_hash,
         "documents": {split: [{k: v for k, v in d.items() if k != "tokens"} for d in rows]
                       for split, rows in docs.items()},
@@ -132,10 +166,12 @@ def main():
     t = commands.add_parser("train")
     t.add_argument("--corpus", type=Path, required=True)
     t.add_argument("--output", type=Path, required=True)
-    for name, default in (("steps", 200), ("batch-size", 4), ("width", 64), ("heads", 4),
-                          ("layers", 2), ("context", 128), ("seed", 42), ("threads", 2)):
+    for name, default in (("steps", 200), ("batch-size", 1), ("width", 64), ("heads", 4),
+                          ("layers", 2), ("context", 128), ("seed", 42), ("threads", 1),
+                          ("checkpoint-every", 25)):
         t.add_argument("--" + name, type=int, default=default)
     t.add_argument("--lr", type=float, default=0.001)
+    t.add_argument("--resume", action="store_true", help="Reprendre training.pt ; steps est le total visé")
     t.set_defaults(func=train)
     g = commands.add_parser("generate")
     g.add_argument("--checkpoint", type=Path, required=True)
@@ -143,13 +179,15 @@ def main():
     g.add_argument("--max-new-tokens", type=int, default=100)
     g.add_argument("--temperature", type=float, default=0.8)
     g.add_argument("--seed", type=int, default=42)
-    g.add_argument("--threads", type=int, default=2)
+    g.add_argument("--threads", type=int, default=1)
     g.set_defaults(func=generate)
     args = parser.parse_args()
     try:
         args.func(args)
     except (ValueError, FileExistsError) as exc:
         parser.exit(2, str(exc) + "\n")
+    except KeyboardInterrupt:
+        parser.exit(130, "Arrêt demandé. Reprise possible depuis le dernier training.pt complet avec --resume.\n")
 
 
 if __name__ == "__main__":

@@ -66,6 +66,10 @@ Essai CPU effectué : **124 800 paramètres, 200 étapes**, perte de validation 
 incohérent. Le [rapport reproductible](../research/kira_model/results/smoke-cpu.json)
 conserve les métriques, les empreintes et cet échec qualitatif : ces chiffres ne sont
 pas un score d'intelligence ni une comparaison avec un autre modèle.
+Cet essai initial utilisait des lots de quatre séquences et deux threads. Les
+nouveaux réglages par défaut sont plus prudents : **un lot de une séquence et un
+thread CPU**, sans GPU. Ils n'ont pas encore été mesurés sur le PC du propriétaire.
+Les chiffres du rapport initial ne décrivent donc pas le débit de ce PC.
 
 Exécution depuis la racine du dépôt, dans un environnement séparé (Python 3.10+) :
 
@@ -77,6 +81,8 @@ python -m pip install --index-url https://download.pytorch.org/whl/cpu -r resear
 python -m unittest discover -s research/kira_model/tests -v
 python -m research.kira_model train --corpus research/kira_model/fixtures/smoke.jsonl --output research/kira_model/runs/seed-001
 python -m research.kira_model generate --checkpoint research/kira_model/runs/seed-001/weights.pt --prompt "Une chercheuse" --max-new-tokens 100
+# Reprise : mêmes options et corpus ; steps indique le total visé, pas les étapes à ajouter.
+python -m research.kira_model train --corpus research/kira_model/fixtures/smoke.jsonl --output research/kira_model/runs/seed-001 --steps 400 --resume
 ```
 
 Le script ne fait aucun appel réseau, ne lit pas la base KIRA et n'utilise aucune clé.
@@ -84,9 +90,21 @@ Il refuse d'écraser un dossier de run existant. Il sauvegarde `weights.pt` et
 `manifest.json` : configuration, initialisation, seed, version PyTorch, empreinte du
 corpus, provenance par document, tokens vus et pertes de validation avant/après.
 Le contexte glisse pendant la génération ; sa longueur se mesure en octets UTF-8,
-pas en mots. Les checkpoints ne reprennent pas l'état de l'optimiseur : pas encore
-de reprise exacte d'un long entraînement. Charger uniquement ses propres checkpoints
-locaux de confiance, même avec `weights_only=True`.
+pas en mots. `training.pt` conserve toutes les 25 étapes (réglable avec
+`--checkpoint-every`) les poids, l'optimiseur et les générateurs aléatoires. La
+sauvegarde est remplacée atomiquement ; après interruption, `--resume` repart du
+dernier checkpoint complet, au prix de perdre les étapes suivantes. Une reprise
+refuse tout changement de corpus, architecture, lot, seed, taux d'apprentissage,
+nombre de threads ou version PyTorch. Les exports `weights.pt` et `manifest.json`
+ne sont actualisés qu'à la fin du run. Ne pas lancer deux entraînements sur le même
+dossier. Charger uniquement ses propres checkpoints locaux de confiance, même avec
+`weights_only=True`. La reproduction exacte entre OS, versions et matériels n'est
+pas garantie ; le test de reprise compare les poids dans le même environnement CPU.
+
+Sur Windows, commencer par vérifier l'import de la roue CPU officielle :
+`python -c "import torch; print(torch.__version__); print(torch.ones(2) + 1)"`.
+La compatibilité du binaire avec cet ancien processeur et la version de Windows
+reste à vérifier sur la machine ; aucun essai local sur ce PC n'a été effectué ici.
 
 Chaque ligne JSONL d'un futur corpus doit porter `id`, `source`, `license`,
 `training_allowed: true`, `split` (`train` ou `validation`) et `text`.
@@ -95,6 +113,8 @@ automatique. La préparation refuse les doublons normalisés et les identifiants
 Elle ne détecte pas encore les quasi-doublons, les chevauchements de passages, ni les
 secrets : réviser et séparer les documents sources avant import. Les conversations et
 fichiers privés ne deviennent pas automatiquement des données d'entraînement.
+La lecture JSONL est limitée à **16 Mio** : le corpus reste en mémoire dans cette
+version. Ce n'est pas un lecteur adapté à un entraînement massif.
 
 ## Étapes suivantes et critères de passage
 
@@ -124,7 +144,10 @@ Le modèle Seed n'est pas connecté aux machines et ne remplace pas Groq dans ce
 - Le départ reste à **0 € de services payants**, conformément à la préférence exprimée.
   Un entraînement plus ambitieux sera dimensionné avec les ressources disponibles ;
   aucune réservation de GPU payant n'est lancée.
-- Calcul : seulement le PC i5/8 Go, autre ordinateur disponible, ou GPU distant ?
+- Calcul confirmé : seulement le PC i5-2520M / 8 Go, sans carte graphique dédiée.
+  La prochaine étape locale est l'import CPU puis un court essai, avant toute durée
+  d'entraînement ambitieuse. Une ressource distante gratuite éventuelle n'est ni
+  réservée ni supposée disponible.
 - Première priorité proposée : français puis dialogue et tutorat scientifique,
   cohérents avec la vocation d'apprentissage de KIRA ; à ajuster avec le propriétaire.
 

@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 import torch
 from torch.nn import functional as F
@@ -44,6 +45,11 @@ class CorpusTests(unittest.TestCase):
 
     def test_no_validation_is_rejected(self):
         self.check_bad_row(lambda rows: [row.update(split="train") for row in rows])
+
+    def test_corpus_read_is_bounded(self):
+        with mock.patch("research.kira_model.data.MAX_CORPUS_BYTES", 64):
+            with self.assertRaisesRegex(ValueError, "Corpus supérieur"):
+                read_corpus(FIXTURE)
 
 
 class ModelTests(unittest.TestCase):
@@ -105,6 +111,59 @@ class ModelTests(unittest.TestCase):
                                      seed=42, max_new_tokens=5, temperature=0))
             with self.assertRaises(FileExistsError):
                 train(args)
+
+    def test_interruption_resumes_same_weights_as_uninterrupted_run(self):
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
+            args = SimpleNamespace(corpus=FIXTURE, output=Path(tmp) / "full", steps=8, batch_size=1,
+                                   threads=1, lr=0.001, width=16, heads=2, layers=1, context=32,
+                                   seed=42, resume=False, checkpoint_every=2)
+            train(args)
+            full = torch.load(args.output / "weights.pt", weights_only=True)
+            args.output = Path(tmp) / "interrupted"
+            calls = 0
+            clip = torch.nn.utils.clip_grad_norm_
+
+            def interrupt_on_fifth(*a, **kw):
+                nonlocal calls
+                calls += 1
+                if calls == 5:
+                    raise KeyboardInterrupt()
+                return clip(*a, **kw)
+
+            with mock.patch("torch.nn.utils.clip_grad_norm_", side_effect=interrupt_on_fifth):
+                with self.assertRaises(KeyboardInterrupt):
+                    train(args)
+            saved = torch.load(args.output / "training.pt", weights_only=True)
+            self.assertEqual(saved["step"], 4)
+            args.resume = True
+            train(args)
+            resumed = torch.load(args.output / "weights.pt", weights_only=True)
+            for name, weight in full["state_dict"].items():
+                self.assertTrue(torch.equal(weight, resumed["state_dict"][name]), name)
+            manifest = json.loads((args.output / "manifest.json").read_text())
+            self.assertEqual(manifest["resumed_from_step"], 4)
+            self.assertEqual(manifest["steps"], 8)
+
+    def test_incompatible_resume_preserves_checkpoint(self):
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
+            args = SimpleNamespace(corpus=FIXTURE, output=Path(tmp) / "run", steps=2, batch_size=1,
+                                   threads=1, lr=0.001, width=16, heads=2, layers=1, context=32,
+                                   seed=42, resume=False, checkpoint_every=1)
+            train(args)
+            before = (args.output / "training.pt").read_bytes()
+            args.resume, args.steps, args.batch_size = True, 4, 2
+            with self.assertRaisesRegex(ValueError, "Reprise incompatible"):
+                train(args)
+            self.assertEqual((args.output / "training.pt").read_bytes(), before)
+            args.batch_size, args.steps = 1, 2
+            with self.assertRaisesRegex(ValueError, "steps doit dépasser"):
+                train(args)
+            args.steps = 4
+            args.corpus = Path(tmp) / "changed.jsonl"
+            args.corpus.write_bytes(FIXTURE.read_bytes() + b"\n")
+            with self.assertRaisesRegex(ValueError, "Reprise incompatible"):
+                train(args)
+            self.assertEqual((args.output / "training.pt").read_bytes(), before)
 
 
 if __name__ == "__main__":
