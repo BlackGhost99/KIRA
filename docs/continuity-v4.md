@@ -70,6 +70,8 @@ Une proposition d'évolution conserve les fichiers complets issus des tests, son
 
 Le rapport d'évolution indique la méthode et le résultat des tests. Le banc d'évaluation LLM est synthétique et distinct de cette validation du code ; il ne démontre pas une amélioration générale de l'intelligence. Ses résultats dépendent aussi du modèle sélectionné et de sa disponibilité. Comparer des révisions exige de garder un modèle et des conditions comparables. Les révisions d'apprentissage sont des déclarations personnelles, pas une certification automatique du niveau.
 
+En mode ECONOMY, ou avec Groq gratuit comme seul fournisseur, l'analyse utilise un petit périmètre de fichiers entiers réellement modifiables : instructions et contexte limités à 6 000 octets UTF-8, réponse demandée limitée à 1 024 tokens. Elle ne prétend pas analyser tout le dépôt et peut ne trouver aucune proposition. Les corrections restent bornées. Une analyse complète refusée pour sa taille (HTTP 413) tente une seule reprise compacte ; un nouveau refus arrête l'analyse avec une explication. Ce refus propre à la requête ne met plus le fournisseur en pause pour les conversations suivantes. Les vrais quotas (HTTP 429), pannes et erreurs de configuration conservent leurs protections.
+
 ## Sauvegarde et restauration
 
 L'archive personnelle est bornée à 32 Mo décompressés, avec lecture par petits lots pendant l'export. Elle a un format versionné et un SHA-256 par table. Ces sommes détectent la corruption ; elles ne constituent pas une signature prouvant l'identité de l'auteur. Ne restaurer que ses propres archives.

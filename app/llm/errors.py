@@ -8,7 +8,7 @@ from .base import LLMError
 
 def http_error(response, provider: str) -> LLMError:
     status = response.status_code
-    category = "billing" if status == 402 else "rate_limit" if status == 429 else "configuration" if status in (401, 403, 404) else "http"
+    category = "request_too_large" if status == 413 else "billing" if status == 402 else "rate_limit" if status == 429 else "configuration" if status in (401, 403, 404) else "http"
     try:
         error = response.json().get("error", {})
         code = str(error.get("code", "") or error.get("type", "")) if isinstance(error, dict) else ""

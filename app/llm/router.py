@@ -63,14 +63,16 @@ class Router:
     def _trip(self, p: Provider, exc: Exception) -> str:
         status = getattr(exc, "status", None)
         category = getattr(exc, "category", "") or (
-            "configuration" if status in (401, 403, 404) else "rate_limit" if status == 429 else "network" if status is None else "http")
+            "request_too_large" if status == 413 else "configuration" if status in (401, 403, 404) else "rate_limit" if status == 429 else "network" if status is None else "http")
         delay = getattr(exc, "retry_after", None)
         with self._lock:
             if category == "configuration":
                 self._disabled[p.name] = p.fingerprint()
-            # Respect Retry-After, including provider delays longer than our default.
-            self._cool[p.name] = time.time() + max(1, delay if delay is not None else 600 if category == "billing" else 120)
-            self._reason[p.name] = category
+            # Un refus de taille concerne cette requête, pas les petits échanges suivants.
+            if category != "request_too_large":
+                # Respect Retry-After, including provider delays longer than our default.
+                self._cool[p.name] = time.time() + max(1, delay if delay is not None else 600 if category == "billing" else 120)
+                self._reason[p.name] = category
             metrics = self._metrics.setdefault(p.name, {})
             metrics["failures"] = metrics.get("failures", 0) + 1
         return f"{p.name}: {category}" + (f" (HTTP {status})" if status else "")
@@ -123,6 +125,12 @@ class Router:
             return result
         if budget_blocked and not errors:
             raise BudgetExceeded("Budget payant atteint ; aucun fournisseur gratuit compatible n'est disponible.")
+        if errors and all("request_too_large" in error for error in errors):
+            raise LLMUnavailable("Requête trop volumineuse pour les fournisseurs disponibles : réduisez le contexte envoyé. " + " | ".join(errors), errors)
+        if candidates and not errors and all(not self._ready(p) for p in candidates):
+            waits = [max(0, int(self._cool.get(p.name, 0) - time.time()) + 1) for p in candidates if p.name not in self._disabled]
+            if waits:
+                raise LLMUnavailable(f"Fournisseur temporairement en pause après une erreur. Réessayez dans environ {min(waits)} s.")
         raise LLMUnavailable("Aucun fournisseur compatible disponible (mode " + mode + "). " + " | ".join(errors), errors)
 
 

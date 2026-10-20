@@ -28,6 +28,7 @@ from . import audit, config, net
 from .approvals import proposal_digest
 from .db import get_db, jdump, jload, now_iso
 from .llm import get_router
+from .llm.base import LLMUnavailable
 from .principles import ALLOWED_PREFIXES, FORBIDDEN_PREFIXES, PROTECTED_PATHS
 from .textutil import clip, extract_json
 
@@ -36,6 +37,8 @@ ALLOWED_EXT = {".py", ".js", ".css", ".html", ".md", ".json"}
 MAX_FILES = 6
 MAX_NEW_FILE_CHARS = 80_000
 SOURCE_BUDGET_CHARS = 260_000
+COMPACT_INPUT_BYTES = 6_000
+COMPACT_OUTPUT_TOKENS = 1_024
 
 
 class EvolutionError(Exception):
@@ -176,9 +179,11 @@ def run_tests(files: dict[str, str]) -> tuple[bool | None, str]:
 
 
 # -- contexte donné à KIRA -------------------------------------------------
-def source_snapshot(budget: int = SOURCE_BUDGET_CHARS) -> str:
+def source_snapshot(budget: int = SOURCE_BUDGET_CHARS, *, byte_budget: bool = False, modifiable_only: bool = False) -> str:
     blocks: list[str] = []
     total = 0
+    omitted = 0
+    measure = (lambda text: len(text.encode('utf-8'))) if byte_budget else len
     # le code vient avant les tests : si le budget de contexte manque, ce sont les tests qui sont omis
     for path in sorted(ROOT.rglob("*"), key=lambda p: (p.relative_to(ROOT).as_posix().startswith("tests/"), p.as_posix())):
         if not path.is_file():
@@ -188,13 +193,19 @@ def source_snapshot(budget: int = SOURCE_BUDGET_CHARS) -> str:
             continue
         if path.suffix not in ALLOWED_EXT:
             continue
+        if modifiable_only and check_path(rel):
+            continue
         text = path.read_text(encoding="utf-8", errors="replace")
         block = f"=== {rel} ===\n{text}\n"
-        if total + len(block) > budget:
-            blocks.append(f"=== {rel} === (omis : budget de contexte atteint)\n")
+        cost = measure(block) + (1 if blocks else 0)
+        if total + cost > budget:
+            omitted += 1
             continue
         blocks.append(block)
-        total += len(block)
+        total += cost
+    notice = f"\n[{omitted} fichiers omis : budget de contexte atteint.]"
+    if omitted and total + measure(notice) <= budget:
+        blocks.append(notice.lstrip('\n'))
     return "\n".join(blocks)
 
 
@@ -256,6 +267,24 @@ def build_prompt(goal: str) -> str:
     return f"{task}\n\n## Données d'usage\n{usage_report()}\n\n## Code source actuel\n{source_snapshot()}"
 
 
+def _clip_bytes(text: str, limit: int) -> str:
+    return text.encode('utf-8')[:max(0, limit)].decode('utf-8', 'ignore')
+
+
+def compact_prompt(goal: str, system: str, problem: str = '') -> str:
+    """Petit périmètre réel, borné en octets ; aucune prétention de revue du dépôt entier."""
+    prefix = ('Analyse compacte : seuls les fichiers entiers ci-dessous sont fournis. '
+              'Propose une petite amélioration de ces fichiers, ou proposal=null si aucun changement utile '
+              'ne peut être justifié. Ne complète pas les fichiers omis de mémoire.\n'
+              'Objectif : ' + _clip_bytes(goal.strip() or 'Amélioration locale utile et vérifiable.', 600) +
+              '\nDonnées d’usage :\n' + _clip_bytes(usage_report(), 700))
+    if problem:
+        prefix += '\nLa proposition précédente a échoué ; produis une nouvelle proposition :\n' + _clip_bytes(problem, 600)
+    prefix += '\n\n## Code source actuel (périmètre limité)\n'
+    available = max(0, COMPACT_INPUT_BYTES - len(system.encode('utf-8')) - len(prefix.encode('utf-8')))
+    return prefix + source_snapshot(available, byte_budget=True, modifiable_only=True)
+
+
 # -- proposition -----------------------------------------------------------
 def source_revision():
     revision = os.environ.get('RENDER_GIT_COMMIT', '')
@@ -270,11 +299,30 @@ def source_revision():
 def propose(goal: str = "", trigger: str = "manual") -> dict:
     router = get_router()
     system = SYSTEM.format(owner=config.settings.owner_name, protected=", ".join(sorted(PROTECTED_PATHS)))
-    messages = [{"role": "user", "content": build_prompt(goal)}]
+    active = router.active()
+    compact = router.mode() == 'ECONOMY' or (config.settings.groq_free_tier and bool(active) and all(p.name == 'groq' for p in active))
+    messages = [{"role": "user", "content": compact_prompt(goal, system) if compact else build_prompt(goal)}]
     candidate: dict | None = None
     last_problem = ""
     for _ in range(3):
-        res = router.complete([system], messages, None, tier="deep", max_tokens=12000, purpose="evolution")
+        try:
+            res = router.complete([system], messages, None, tier="deep",
+                                  max_tokens=COMPACT_OUTPUT_TOKENS if compact else 12000, purpose="evolution")
+        except LLMUnavailable as exc:
+            oversized = bool(exc.errors) and all('request_too_large' in error for error in exc.errors)
+            if not oversized:
+                raise
+            if compact:
+                raise EvolutionError("Même l'analyse compacte dépasse la limite du fournisseur. Choisissez un objectif plus petit ou un fournisseur disposant de plus de capacité.") from exc
+            compact = True
+            messages = [{"role": "user", "content": compact_prompt(goal, system)}]
+            # Une seule nouvelle tentative, avec un contexte réellement réduit.
+            try:
+                res = router.complete([system], messages, None, tier="deep", max_tokens=COMPACT_OUTPUT_TOKENS, purpose="evolution")
+            except LLMUnavailable as retry_exc:
+                if retry_exc.errors and all('request_too_large' in error for error in retry_exc.errors):
+                    raise EvolutionError("Même l'analyse compacte dépasse la limite du fournisseur. Aucun changement n'a été proposé.") from retry_exc
+                raise
         data = extract_json(res.text)
         problem = ""
         if not isinstance(data, dict):
@@ -296,7 +344,10 @@ def propose(goal: str = "", trigger: str = "manual") -> dict:
                     break
                 problem = "La suite de tests échoue avec ce changement :\n" + output + "\nCorrige ta proposition."
         last_problem = problem
-        messages += [{"role": "assistant", "content": res.text}, {"role": "user", "content": problem}]
+        if compact:
+            messages = [{"role": "user", "content": compact_prompt(goal, system, problem)}]
+        else:
+            messages += [{"role": "assistant", "content": res.text}, {"role": "user", "content": problem}]
     if candidate is None:
         raise EvolutionError("KIRA n'a pas réussi à produire une proposition valide. " + clip(last_problem, 400))
     prop, files = candidate["prop"], candidate["files"]
