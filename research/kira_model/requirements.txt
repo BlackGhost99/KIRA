@@ -1,0 +1,2 @@
+# Environnement séparé du serveur KIRA. Installer la roue CPU ou CUDA adaptée.
+torch==2.14.1

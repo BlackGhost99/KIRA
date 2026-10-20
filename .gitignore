@@ -11,3 +11,6 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+.venv-model/
+research/kira_model/runs/
+research/kira_model/data/

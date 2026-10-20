@@ -1,5 +1,10 @@
 # KIRA
 
+**Nouvelle direction — 20 octobre 2026 :** développer le propre modèle de KIRA,
+initialisé de zéro, avec un core installé en arrière-plan et un moteur cloud.
+La première chaîne expérimentale est dans `research/kira_model` ; elle ne remplace
+pas encore les fournisseurs du serveur. Voir [le plan et les commandes](docs/kira-own-model.md).
+
 Ton partenaire de recherche et d'apprentissage : une IA personnelle qui te connaît, t'explique la physique, les maths,
 l'informatique, les langues ou le droit au niveau où tu en es, calcule et trace pour de vrai, surveille Internet pour toi
 et te propose elle-même des améliorations. Tu la gardes sous contrôle : **rien ne s'applique sans ton accord.**

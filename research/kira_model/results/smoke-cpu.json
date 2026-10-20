@@ -1,0 +1,113 @@
+{
+  "format": 1,
+  "model": "kira-seed-0.1",
+  "status": "experimental-not-an-assistant",
+  "initialization": "random",
+  "tokenizer": "utf8-bytes-v1",
+  "config": {
+    "width": 64,
+    "heads": 4,
+    "layers": 2,
+    "context": 128
+  },
+  "parameters": 124800,
+  "torch_version": "2.14.1+cpu",
+  "device": "cpu",
+  "seed": 42,
+  "steps": 200,
+  "batch_size": 4,
+  "learning_rate": 0.001,
+  "tokens_seen": 102400,
+  "corpus_sha256": "d044cd504e1890705a61ce81d834eadc73f63b0a152f5c63db7e15bfab2c29d1",
+  "documents": {
+    "train": [
+      {
+        "id": "train-1",
+        "source": "KIRA:synthetic-smoke-fixture-2026-10-20",
+        "license": "project-authored-synthetic-example",
+        "sha256": "cdd2fc0d097e41f8c95027291068fb29eb71b7e9b5ada4fec6f83740d1e455b4"
+      },
+      {
+        "id": "train-2",
+        "source": "KIRA:synthetic-smoke-fixture-2026-10-20",
+        "license": "project-authored-synthetic-example",
+        "sha256": "50f2d6211890ef44fe5fd3e4276229db576d8e259860c98adfa84cce773be8ea"
+      },
+      {
+        "id": "train-3",
+        "source": "KIRA:synthetic-smoke-fixture-2026-10-20",
+        "license": "project-authored-synthetic-example",
+        "sha256": "eec9e6b530c00961b46bf6f4e9969f62a109c268dcc8a5c96d4a7cdd81dbaf2b"
+      },
+      {
+        "id": "train-4",
+        "source": "KIRA:synthetic-smoke-fixture-2026-10-20",
+        "license": "project-authored-synthetic-example",
+        "sha256": "cebc2e179ff2fb8f3df38f0c4f48acf641521ddb27bc62589c3334899c23019f"
+      },
+      {
+        "id": "train-5",
+        "source": "KIRA:synthetic-smoke-fixture-2026-10-20",
+        "license": "project-authored-synthetic-example",
+        "sha256": "d8e62bb294e97063117371ce6e5e0f284665d349c25e653131fc8d8251449f30"
+      },
+      {
+        "id": "train-6",
+        "source": "KIRA:synthetic-smoke-fixture-2026-10-20",
+        "license": "project-authored-synthetic-example",
+        "sha256": "fbbc3fb02b87cf2d0fbd8bb4e079b9b802e9e71112433b20add82d364377a036"
+      }
+    ],
+    "validation": [
+      {
+        "id": "validation-1",
+        "source": "KIRA:synthetic-smoke-fixture-2026-10-20",
+        "license": "project-authored-synthetic-example",
+        "sha256": "0d80fee2e2ea9f3e7d02fe8665c4995505dbda0955177c4ff83fddeae6eb7bd4"
+      },
+      {
+        "id": "validation-2",
+        "source": "KIRA:synthetic-smoke-fixture-2026-10-20",
+        "license": "project-authored-synthetic-example",
+        "sha256": "bb08d7cd0cd895da045e2b8702f7ba11537b30b18152a7b94fe9fdbaa26a6825"
+      }
+    ]
+  },
+  "validation_loss_initial": 5.548172088440307,
+  "validation_loss_final": 2.52489783616361,
+  "history": [
+    {
+      "step": 1,
+      "train_loss": 5.552888870239258
+    },
+    {
+      "step": 50,
+      "train_loss": 2.7949283123016357
+    },
+    {
+      "step": 100,
+      "train_loss": 2.3450686931610107
+    },
+    {
+      "step": 150,
+      "train_loss": 2.051995277404785
+    },
+    {
+      "step": 200,
+      "train_loss": 2.091914415359497
+    }
+  ],
+  "checkpoint_sha256": "c1013a39fc9b6553f8b1f3586508852307080fec7592275651a29372697d6219",
+  "generation": {
+    "prompt": "Une chercheuse",
+    "temperature": 0,
+    "max_new_tokens": 120,
+    "seed": 42,
+    "observed": " une une une une une une pie une une une une une une pone une pone une une une une une une une une pe une une e une une une e e ",
+    "assessment": "Repetitive incoherent continuation; no dialogue or reasoning capability demonstrated."
+  },
+  "tests": {
+    "command": "python -m unittest discover -s research/kira_model/tests -v",
+    "passed": 9
+  }
+}

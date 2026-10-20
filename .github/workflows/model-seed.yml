@@ -1,0 +1,21 @@
+name: KIRA Seed
+on:
+  pull_request:
+    paths:
+      - 'research/kira_model/**'
+      - '.github/workflows/model-seed.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/kira_model/**'
+      - '.github/workflows/model-seed.yml'
+jobs:
+  cpu-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r research/kira_model/requirements.txt
+      - run: python -m unittest discover -s research/kira_model/tests -v
