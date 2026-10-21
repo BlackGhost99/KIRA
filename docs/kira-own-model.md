@@ -101,13 +101,15 @@ dossier. Charger uniquement ses propres checkpoints locaux de confiance, même a
 `weights_only=True`. La reproduction exacte entre OS, versions et matériels n'est
 pas garantie ; le test de reprise compare les poids dans le même environnement CPU.
 
-Sur Windows, commencer par vérifier l'import de la roue CPU officielle :
-`python -c "import torch; print(torch.__version__); print(torch.ones(2) + 1)"`.
-La compatibilité du binaire avec cet ancien processeur et la version de Windows
-reste à vérifier sur la machine ; aucun essai local sur ce PC n'a été effectué ici.
+La compatibilité CPU est maintenant confirmée par les sorties du propriétaire :
+Python 3.15.0, PyTorch 2.14.1+cpu, runtime Microsoft Visual C++ x64 et NumPy 2.5.4.
+Les douze tests initiaux ont réussi sous Windows en 27,734 secondes. Le premier
+entraînement local a atteint 200 étapes, avec une perte de validation de
+5,5481718448 à 2,5411603551 ; la génération reste incohérente. Il s'agit du PC
+i5/8 Go et du petit corpus initial, pas d'une mesure sur le nouveau corpus.
 
 Chaque ligne JSONL d'un futur corpus doit porter `id`, `source`, `license`,
-`training_allowed: true`, `split` (`train` ou `validation`) et `text`.
+`training_allowed: true`, `split` (`train`, `validation` ou `test`) et `text`.
 L'autorisation renseignée est une déclaration humaine, pas une vérification juridique
 automatique. La préparation refuse les doublons normalisés et les identifiants répétés.
 Elle ne détecte pas encore les quasi-doublons, les chevauchements de passages, ni les
@@ -115,6 +117,62 @@ secrets : réviser et séparer les documents sources avant import. Les conversat
 fichiers privés ne deviennent pas automatiquement des données d'entraînement.
 La lecture JSONL est limitée à **16 Mio** : le corpus reste en mémoire dans cette
 version. Ce n'est pas un lecteur adapté à un entraînement massif.
+
+## Deuxième expérience : français littéraire et mesure CPU
+
+Le module `prepare_fr` prépare un petit corpus reproductible à partir de quatre
+fichiers texte de Project Gutenberg. La sélection sépare les ouvrages avant leur
+découpage :
+
+| Usage | Ouvrage | Passages retenus |
+|---|---|---|
+| Entraînement | Jules Verne, *Le tour du monde en quatre-vingts jours*, no 800 | 235 |
+| Entraînement | Voltaire, *Candide*, no 4650 | 131 |
+| Validation | Maupassant, *Contes de la Bécasse*, no 11714 | 8, répartis sur l'ouvrage |
+| Test réservé | Flaubert, *Trois contes*, no 12065 | 8, répartis sur l'ouvrage |
+
+Le corpus JSONL fait 782 827 octets, dont 642 949 tokens/octet côté entraînement
+(marqueurs compris). Le script télécharge quatre sources pour environ 1,15 Mo,
+chacune limitée à 2 Mio et comparée à une empreinte SHA-256 vérifiée. Une mise à jour
+du fichier distant provoque un refus, pas un changement silencieux du corpus.
+Les originaux complets et leurs mentions sont conservés dans `raw/`, avec les
+attributions et empreintes dans `sources.json`. Les catalogues indiquent le statut
+« public domain in the USA » et les fichiers contiennent les conditions Project
+Gutenberg ; cela ne constitue pas une vérification automatique des droits dans tous
+les pays. Les données téléchargées restent hors du dépôt Git.
+
+Les en-têtes et pieds de page Gutenberg sont exclus des données d'apprentissage ;
+des titres et tables des matières peuvent rester dans le corps. Le découpage n'a
+pas de chevauchement et les doublons de passages normalisés sont supprimés. Il ne
+s'agit pas d'une déduplication de toutes les phrases. Le contenu est historique et
+littéraire, avec les biais et le vocabulaire de ses auteurs ; ce n'est ni un corpus
+de dialogue, ni une base factuelle moderne, ni une couverture représentative du
+français. Le split `test` n'est utilisé ni pour apprendre ni pour choisir la perte
+de validation. Son contenu ne doit être évalué qu'après les choix de développement.
+
+Depuis la nouvelle copie du code, avec le même environnement Python déjà installé :
+
+```powershell
+$kiraLabPython = "$env:USERPROFILE\KIRA-Lab\.venv\Scripts\python.exe"
+& $kiraLabPython -m research.kira_model.prepare_fr --output research/kira_model/data/fr-literature-v1
+& $kiraLabPython -m unittest discover -s research/kira_model/tests -v
+& $kiraLabPython -m research.kira_model train --corpus research/kira_model/data/fr-literature-v1/corpus.jsonl --output research/kira_model/runs/fr-cpu-001 --width 128 --layers 4 --heads 4 --context 256 --steps 50
+```
+
+Ce second profil comporte **859 136 paramètres** et augmente la largeur et le nombre de couches, mais conserve un
+thread et un lot de une séquence. Il commence avec de nouveaux poids : architecture
+et corpus différents interdisent la reprise du premier essai. Celui-ci est conservé.
+Ne pas comparer directement les valeurs de pertes des deux corpus comme une mesure
+d'amélioration. Le premier run de 50 étapes sert à mesurer la vitesse et la mémoire
+pratique, sans promettre un texte cohérent. Le manifeste et la sortie finale
+indiquent `seconds_per_step`, mesuré sur le segment d'entraînement, sauvegardes
+comprises mais hors évaluation initiale/finale. Une durée extrapolée reste indicative.
+
+Pour une reprise ultérieure, conserver tous les paramètres du profil et utiliser
+`--steps TOTAL --resume`. Les 19 tests vérifient aussi le nettoyage, la séparation
+par livre, les empreintes, l'import hors réseau et l'absence d'influence du texte
+réservé au test sur les poids appris. Le temps de calcul mesuré dans l'environnement
+de développement ne remplace pas la mesure sur la machine du propriétaire.
 
 ## Étapes suivantes et critères de passage
 
@@ -145,8 +203,8 @@ Le modèle Seed n'est pas connecté aux machines et ne remplace pas Groq dans ce
   Un entraînement plus ambitieux sera dimensionné avec les ressources disponibles ;
   aucune réservation de GPU payant n'est lancée.
 - Calcul confirmé : seulement le PC i5-2520M / 8 Go, sans carte graphique dédiée.
-  La prochaine étape locale est l'import CPU puis un court essai, avant toute durée
-  d'entraînement ambitieuse. Une ressource distante gratuite éventuelle n'est ni
+  L'import CPU et le premier essai sont réussis ; le prochain est une mesure sur le
+  nouveau corpus, avant toute durée ambitieuse. Une ressource distante gratuite éventuelle n'est ni
   réservée ni supposée disponible.
 - Première priorité proposée : français puis dialogue et tutorat scientifique,
   cohérents avec la vocation d'apprentissage de KIRA ; à ajuster avec le propriétaire.

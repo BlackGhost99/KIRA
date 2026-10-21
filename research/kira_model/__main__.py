@@ -7,6 +7,7 @@ import json
 import math
 from pathlib import Path
 import random
+import time
 
 import torch
 from torch.nn import functional as F
@@ -85,6 +86,7 @@ def train(args):
 
     if not start:
         save_training(0)
+    segment_start = time.perf_counter()
     for step in range(start + 1, args.steps + 1):
         windows = []
         for _ in range(args.batch_size):
@@ -106,6 +108,7 @@ def train(args):
             print(json.dumps(history[-1]), flush=True)
         if step % every == 0 or step == args.steps:
             save_training(step)
+    segment_seconds = time.perf_counter() - segment_start
     final = evaluate(model, docs["validation"], cfg.context)
     manifest = {
         "format": 1, "model": "kira-seed-0.1", "status": "experimental-not-an-assistant",
@@ -114,6 +117,8 @@ def train(args):
         "torch_version": str(torch.__version__), "device": "cpu", "seed": args.seed,
         "steps": args.steps, "batch_size": args.batch_size, "learning_rate": args.lr,
         "threads": args.threads, "checkpoint_every": every, "resumed_from_step": start,
+        "segment_steps": args.steps - start, "segment_seconds": segment_seconds,
+        "seconds_per_step": segment_seconds / (args.steps - start),
         "tokens_seen": seen, "corpus_sha256": corpus_hash,
         "documents": {split: [{k: v for k, v in d.items() if k != "tokens"} for d in rows]
                       for split, rows in docs.items()},
@@ -125,7 +130,8 @@ def train(args):
     temp.replace(args.output / "weights.pt")
     (args.output / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"parameters": manifest["parameters"], "validation_initial": initial,
-                      "validation_final": final, "output": str(args.output)}), flush=True)
+                      "validation_final": final, "seconds_per_step": manifest["seconds_per_step"],
+                      "output": str(args.output)}), flush=True)
 
 
 def generate(args):

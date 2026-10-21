@@ -1,0 +1,91 @@
+{
+  "scope": "Development CPU only; not a timing measurement on the owner PC",
+  "corpus": {
+    "name": "kira-fr-literature-v1",
+    "corpus_sha256": "2df9b1bb28bd71081a6181d49063e27e9e92edf5710b704e9b84afad810eee35",
+    "bytes": 782827,
+    "counts": {
+      "train": 366,
+      "validation": 8,
+      "test": 8
+    },
+    "token_counts": {
+      "train": 642949,
+      "validation": 13884,
+      "test": 12622
+    }
+  },
+  "sources": [
+    {
+      "id": 800,
+      "author": "Jules Verne",
+      "title": "Le tour du monde en quatre-vingts jours",
+      "split": "train",
+      "sha256": "bd89ef4c406ae063a1eeba2ec0689532e8c83ecfb1fce742cdd22bc47cb888da",
+      "catalog": "https://www.gutenberg.org/ebooks/800",
+      "raw_bytes": 462173,
+      "available_chunks": 235,
+      "terms": "https://www.gutenberg.org/policy/license.html",
+      "selected_chunks_count": 235
+    },
+    {
+      "id": 4650,
+      "author": "Voltaire",
+      "title": "Candide, ou l'optimisme",
+      "split": "train",
+      "sha256": "1cc10ab3268a76aa01bd3f9722ae2ae0e5e36b869a18b0bb0832b75bc0327806",
+      "catalog": "https://www.gutenberg.org/ebooks/4650",
+      "raw_bytes": 234120,
+      "available_chunks": 131,
+      "terms": "https://www.gutenberg.org/policy/license.html",
+      "selected_chunks_count": 131
+    },
+    {
+      "id": 11714,
+      "author": "Guy de Maupassant",
+      "title": "Contes de la Bécasse",
+      "split": "validation",
+      "sha256": "d78ea5ac752a2f3572c153d0c974dbaf62b01c25b7ca8994f6a2b6fc9158b0eb",
+      "catalog": "https://www.gutenberg.org/ebooks/11714",
+      "raw_bytes": 235075,
+      "available_chunks": 110,
+      "terms": "https://www.gutenberg.org/policy/license.html",
+      "selected_chunks_count": 8
+    },
+    {
+      "id": 12065,
+      "author": "Gustave Flaubert",
+      "title": "Trois contes",
+      "split": "test",
+      "sha256": "7f82586956f4a8f4185ef7ff056692660f46dce70038a1380b6d9ffba38d63b4",
+      "catalog": "https://www.gutenberg.org/ebooks/12065",
+      "raw_bytes": 213395,
+      "available_chunks": 102,
+      "terms": "https://www.gutenberg.org/policy/license.html",
+      "selected_chunks_count": 8
+    }
+  ],
+  "run": {
+    "config": {
+      "width": 128,
+      "heads": 4,
+      "layers": 4,
+      "context": 256
+    },
+    "parameters": 859136,
+    "torch_version": "2.14.1+cpu",
+    "steps": 50,
+    "batch_size": 1,
+    "threads": 1,
+    "seed": 42,
+    "learning_rate": 0.001,
+    "tokens_seen": 12800,
+    "segment_seconds": 1.6273646009999538,
+    "seconds_per_step": 0.03254729201999908,
+    "validation_loss_initial": 5.600075703596444,
+    "validation_loss_final": 2.8587442251267574
+  },
+  "test_split_evaluated": false,
+  "local_tests_passed": 19,
+  "limitations": "Small literary language-model experiment; no claim of coherent French, dialogue or reasoning; losses not comparable to the initial eight-paragraph corpus."
+}

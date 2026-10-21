@@ -26,7 +26,7 @@ def read_corpus(path: Path) -> tuple[dict, str]:
         raw = source.read(MAX_CORPUS_BYTES + 1)
     if len(raw) > MAX_CORPUS_BYTES:
         raise ValueError("Corpus supérieur à 16 Mio : ce laboratoire attend un petit corpus local")
-    groups: dict[str, list] = {"train": [], "validation": []}
+    groups: dict[str, list] = {"train": [], "validation": [], "test": []}
     ids, contents = set(), set()
     for line_no, line in enumerate(raw.decode("utf-8").splitlines(), 1):
         if not line.strip():
@@ -38,7 +38,7 @@ def read_corpus(path: Path) -> tuple[dict, str]:
         if row.get("training_allowed") is not True:
             raise ValueError(f"Ligne {line_no} : autorisation explicite requise")
         if row.get("split") not in groups:
-            raise ValueError(f"Ligne {line_no} : split train ou validation requis")
+            raise ValueError(f"Ligne {line_no} : split train, validation ou test requis")
         normalized = " ".join(unicodedata.normalize("NFKC", row["text"]).casefold().split())
         digest = hashlib.sha256(normalized.encode()).hexdigest()
         if row["id"] in ids or digest in contents:
@@ -49,6 +49,6 @@ def read_corpus(path: Path) -> tuple[dict, str]:
             "id": row["id"], "source": row["source"], "license": row["license"],
             "sha256": digest, "tokens": encode(row["text"]),
         })
-    if not all(groups.values()):
+    if not groups["train"] or not groups["validation"]:
         raise ValueError("Au moins un document distinct par split est requis")
     return groups, hashlib.sha256(raw).hexdigest()
