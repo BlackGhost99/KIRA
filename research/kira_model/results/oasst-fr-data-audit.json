@@ -1,0 +1,61 @@
+{
+  "format": "kira-oasst-fr-v1",
+  "source_url": "https://huggingface.co/datasets/OpenAssistant/oasst1/resolve/fdf72ae0827c1cda404aff25b6603abec9e3399b/",
+  "source_revision": "fdf72ae0827c1cda404aff25b6603abec9e3399b",
+  "sources": {
+    "2023-04-12_oasst_ready.trees.jsonl.gz": {
+      "bytes": 34145252,
+      "sha256": "2a9a8fd343e9b28e04a895a669d3253f82d93e9c174d440199ae19d5fafbdff7"
+    },
+    "README.md": {
+      "bytes": 10168,
+      "sha256": "68483ac2fcc2f3f7779f453352363827678070ef35b6d746ccb2ca6958540fff"
+    },
+    "LICENSE": {
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    }
+  },
+  "license": "Apache-2.0; authored examples retain project attribution",
+  "attribution": "OpenAssistant Conversations (OASST1), LAION and OpenAssistant contributors, 2023",
+  "changes": "French, human-reviewed rank-0 paths; metadata quality and length filters; grouped split; authored open examples added",
+  "tokenizer_sha256": "8a9245ab8b5935c0db91c50b57312bfd38529724bed9c7f6c56d04ac77f863d7",
+  "context": 256,
+  "sha256": "b3a0aa21e4556b559255d4c359127265be0ef8045948f3689729ce06b86e9e75",
+  "bytes": 138611,
+  "examples": {
+    "train": 134,
+    "validation": 22,
+    "test": 19
+  },
+  "counts": {
+    "trees_read": 10364,
+    "french_root_trees": 263,
+    "quality_paths": 204,
+    "rejected_branch_roots": 598,
+    "over_context_paths": 109,
+    "authored_open_examples": 80,
+    "oasst_examples": 95
+  },
+  "reserved_prompts_excluded": true,
+  "scope": "small-filtered-development-corpus-not-a-general-assistant-guarantee",
+  "split_provenance_counts": {
+    "train": {
+      "oasst": 74,
+      "authored": 60
+    },
+    "validation": {
+      "oasst": 12,
+      "authored": 10
+    },
+    "test": {
+      "oasst": 9,
+      "authored": 10
+    }
+  },
+  "decision": {
+    "additional_training_started": false,
+    "reason": "Only 74 retained human-source training paths at context 256. This is a bounded data audit, not sufficient evidence for a repaired conversational model.",
+    "new_model_distributed": false
+  }
+}

@@ -88,6 +88,17 @@ jobs:
         run: |
           python -m research.kira_model.dialogue evaluate --checkpoint "$RUNNER_TEMP/kira-dialogue-run/best.pt" --data "$RUNNER_TEMP/kira-dialogue-curriculum.jsonl" --output "$RUNNER_TEMP/dialogue-after.json"
           cat "$RUNNER_TEMP/kira-dialogue-run/manifest.json"
+      - name: Conversations libres observées, sans qualification automatique
+        run: >-
+          python -m research.kira_model.conversation_eval
+          --checkpoint "$RUNNER_TEMP/kira-dialogue-run/best.pt"
+          --output "$RUNNER_TEMP/dialogue-free-conversation.json"
+      - name: Audit borné des données françaises OpenAssistant
+        run: >-
+          python -m research.kira_model.prepare_oasst_fr
+          --checkpoint "$RUNNER_TEMP/kira-dialogue-run/best.pt"
+          --raw-dir "$RUNNER_TEMP/kira-oasst-raw"
+          --output "$RUNNER_TEMP/kira-oasst-fr/corpus.jsonl"
       - uses: actions/upload-artifact@v4
         with:
           name: kira-seed-dialogue-pilot
@@ -96,4 +107,6 @@ jobs:
             ${{ runner.temp }}/kira-dialogue-run/manifest.json
             ${{ runner.temp }}/dialogue-before.json
             ${{ runner.temp }}/dialogue-after.json
+            ${{ runner.temp }}/dialogue-free-conversation.json
+            ${{ runner.temp }}/kira-oasst-fr/corpus.manifest.json
           retention-days: 14

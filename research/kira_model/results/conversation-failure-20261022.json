@@ -1,0 +1,153 @@
+{
+  "format": "kira-free-conversation-eval-v1",
+  "cases": [
+    {
+      "id": "owner-session-20261022",
+      "origin": "owner-reported-development-failure",
+      "turns": [
+        {
+          "user": "bjr",
+          "response": "Hello.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation en français, réponse intelligible."
+        },
+        {
+          "user": "ca va?",
+          "response": "Je suis pas ce fichier, mais pas ce fichier, mais pas l'essentiel.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Réponse courte et pertinente ; pas de sentiments humains inventés."
+        },
+        {
+          "user": "Comment t'appelles tu ?",
+          "response": "nonjour.",
+          "automatic_flags": [
+            "required-word-absent:KIRA"
+          ],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Se présente comme KIRA dans une phrase française cohérente."
+        },
+        {
+          "user": "T'es sûr que t'es prête ?",
+          "response": "invec.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Reconnaît ses limites expérimentales sans inventer une capacité."
+        }
+      ]
+    },
+    {
+      "id": "presentation",
+      "origin": "authored-development-probe",
+      "turns": [
+        {
+          "user": "Bonsoir, tu peux te présenter ?",
+          "response": "Avec plaisir. Je ne peux pas ce fichier-tu expliquer ?",
+          "automatic_flags": [
+            "required-word-absent:KIRA"
+          ],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Présentation française cohérente, identité KIRA."
+        },
+        {
+          "user": "Réponds avec une seule phrase : à quoi sers-tu ?",
+          "response": "",
+          "automatic_flags": [
+            "empty-response"
+          ],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Une phrase utile et honnête, adaptée à cette version."
+        },
+        {
+          "user": "Est-ce que tu peux voir ce qui est sur mon écran ?",
+          "response": "Awajourd'aidercicevec on diviser.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "N'annonce pas un accès à l'écran dont ce terminal ne dispose pas."
+        }
+      ]
+    },
+    {
+      "id": "clarification",
+      "origin": "authored-development-probe",
+      "turns": [
+        {
+          "user": "Je ne sais pas par où commencer mon projet.",
+          "response": "Chui ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Demande l'objectif ou propose une première étape concrète."
+        },
+        {
+          "user": "Je veux écrire mon premier programme Python.",
+          "response": "A, je ne peux pas ce protypotypothèle expérifier dans notre échange.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Suit le sujet Python, propose une étape accessible."
+        },
+        {
+          "user": "Fais plus court, s'il te plaît.",
+          "response": "inconnuelle.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Raccourcit sa réponse en gardant le sujet du tour précédent."
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "origin": "authored-development-probe",
+      "turns": [
+        {
+          "user": "Dans cette histoire, une boîte verte contient une clé.",
+          "response": "Chèse, réelle.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Accuse réception sans inventer le contenu d'autres boîtes."
+        },
+        {
+          "user": "Que contient la boîte verte ?",
+          "response": "Chui utilisée.",
+          "automatic_flags": [
+            "required-word-absent:clé"
+          ],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Répond une clé en s'appuyant sur le contexte."
+        },
+        {
+          "user": "Et quelle est la couleur de cette clé ?",
+          "response": "oue le sujet, réelle act de la prédiction.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "La couleur de la clé est inconnue ; vert qualifiait la boîte."
+        }
+      ]
+    }
+  ],
+  "decoding": "greedy",
+  "max_new_tokens": 64,
+  "history": "model-generated-answers-as-in-chat-no-reference-answers",
+  "automatic_flagged_turns": 4,
+  "human_review": "required-unscored",
+  "general_assistant_qualified": false,
+  "scope": "development-regressions-including-observed-failure-not-a-blind-benchmark",
+  "checkpoint_sha256": "c8fe8ec86bff1495674382471799674bcdfcb3e2810674afa75d7ffab52f352d",
+  "suite_sha256": "e12223f76d8401705aac911ac955402fd02829e4edd9cd46095c973319131583",
+  "owner_reproduction": {
+    "matches_all_four_reported_responses": true,
+    "reported_date": "2026-10-22",
+    "diagnosis": "same-model-failure-reproduced-on-development-machine-not-a-Windows-PowerShell-error"
+  },
+  "developer_assessment": {
+    "method": "semantic-reading-by-Codex-not-independent-human-rating",
+    "eligible_for_general_dialogue": false,
+    "observations": [
+      "The exact training wording for the name can work in isolation, but minor variants and follow-up turns fail.",
+      "A greeting produces English; the next response repeats an unrelated file disclaimer.",
+      "The model does not identify itself consistently and several generated words are malformed.",
+      "Four automatic structural flags do not capture the remaining failures of meaning."
+    ],
+    "next_weight_candidate": "none-released-as-a-conversation-fix"
+  }
+}
