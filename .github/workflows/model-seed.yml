@@ -73,3 +73,27 @@ jobs:
             ${{ runner.temp }}/kira-bpe-run/tokenizer.json
             ${{ runner.temp }}/kira-bpe-run/weights.pt
           retention-days: 14
+      - name: Curriculum de dialogue original et référence avant adaptation
+        run: |
+          python -m research.kira_model.dialogue prepare --output "$RUNNER_TEMP/kira-dialogue-curriculum.jsonl"
+          python -m research.kira_model.dialogue evaluate --checkpoint "$RUNNER_TEMP/kira-bpe-run/weights.pt" --data "$RUNNER_TEMP/kira-dialogue-curriculum.jsonl" --output "$RUNNER_TEMP/dialogue-before.json"
+      - name: Dialogue CPU avec répétition du corpus français
+        run: >-
+          python -m research.kira_model.dialogue train
+          --base "$RUNNER_TEMP/kira-bpe-run/weights.pt"
+          --data "$RUNNER_TEMP/kira-dialogue-curriculum.jsonl"
+          --replay-corpus "$RUNNER_TEMP/kira-bpe-corpus/corpus.jsonl"
+          --output "$RUNNER_TEMP/kira-dialogue-run" --steps 2000
+      - name: Réponses observées après adaptation
+        run: |
+          python -m research.kira_model.dialogue evaluate --checkpoint "$RUNNER_TEMP/kira-dialogue-run/best.pt" --data "$RUNNER_TEMP/kira-dialogue-curriculum.jsonl" --output "$RUNNER_TEMP/dialogue-after.json"
+          cat "$RUNNER_TEMP/kira-dialogue-run/manifest.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kira-seed-dialogue-pilot
+          path: |
+            ${{ runner.temp }}/kira-dialogue-run/best.pt
+            ${{ runner.temp }}/kira-dialogue-run/manifest.json
+            ${{ runner.temp }}/dialogue-before.json
+            ${{ runner.temp }}/dialogue-after.json
+          retention-days: 14

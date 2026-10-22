@@ -191,6 +191,11 @@ enregistré. Aucun gain de qualité du texte n'est supposé sans observer le pil
 
 ## Étapes suivantes et critères de passage
 
+La [version Dialogue 0.3](kira-seed-dialogue.md) poursuit les poids BPE existants,
+ajoute un curriculum original et des évaluations, puis un terminal de dialogue.
+La sélection des poids prend en compte une régression éventuelle de la langue.
+Cette chaîne reste expérimentale et ne démontre pas une capacité généraliste.
+
 1. **Cadrer une première compétence** : français de base et dialogue simple proposés.
    Fixer les moyens matériels et la limite de dépense avant de dimensionner le modèle.
 2. **Constituer le corpus** : sources autorisées, couverture linguistique, qualité,
