@@ -7,8 +7,11 @@ l'interface graphique reste secondaire.
 
 L'expérience [KIRA 0.4](kira-language-0.4.md) poursuit maintenant ces poids sur un
 échantillon de français simple, puis un corpus de dialogue plus varié. Les mesures
-et les sorties sont conservées séparément des tests techniques ; le pilote 0.3
-reste non qualifié pour converser.
+et les sorties sont conservées séparément des tests techniques. Les pilotes 0.3
+et 0.4 restent non qualifiés pour converser : le 0.4 reproduit un récit hors sujet
+après « bsr », puis ignore les tours suivants. Les quelques formulations réussies
+ne représentent pas un dialogue robuste ; l'échec est conservé dans le rapport
+de reproduction et les sondes élargies.
 
 ## Ce que signifie « son propre modèle »
 

@@ -6,6 +6,13 @@ KIRA**, avec le même tokenizer et le même Transformer de 1 088 256 paramètres
 Elle ne charge pas de poids préentraînés d'un autre modèle. Les nouvelles données
 externes restent attribuées à leurs auteurs et les textes synthétiques sont signalés.
 
+**Statut après l'essai du propriétaire : dialogue non utilisable.** Le même export
+reproduit mot pour mot le récit de Lulu après « bsr », puis les trois réponses
+hors sujet à « hein », « hello » et « suite ». Le chargement et l'installation
+Windows ne sont pas la cause de cet échec reproduit sur la machine de développement.
+Les quatre réponses réussies plus bas sont un résultat limité à ces formulations
+et à cet historique, pas une correction robuste du dialogue.
+
 ## Corpus de langue
 
 [LeCarnet](https://huggingface.co/datasets/MaxLSB/LeCarnet) est publié par MaxLSB
@@ -139,15 +146,79 @@ et ne doivent pas être comparées entre elles. Plusieurs variables changent
 ensemble entre les pilotes : corpus, nombre d'étapes et point de départ du
 dialogue ; ces chiffres ne sont pas une étude causale d'un facteur isolé.
 
-Le fichier proposé est **un pilote de recherche pour cet essai de base**. Les
-treize réponses de l'export final ont été revérifiées identiques à celles du run.
+Le fichier distribué reste **un pilote de recherche non utilisable en dialogue**.
+Les treize réponses de la suite initiale ont été revérifiées identiques à celles du run.
 Les 78 tests techniques passent localement avec Hub, PyYAML et PyArrow bloqués ;
 ils ne qualifient ni les réponses ni une capacité d'assistante généraliste.
 
 ## Vérifier avant de proposer des poids
 
+Le [rapport de reproduction](../research/kira_model/results/dialogue-v04-owner-bsr-failure.json)
+conserve l'empreinte de l'export, les quatre réponses exactes et les variantes
+essayées séparément. En décodage greedy, contexte et options identiques au terminal,
+« bjr » et « hello » isolés reçoivent une salutation. « bsr », « bonsoir » et
+« salut » isolés déclenchent des récits ; « Bonsoir » reçoit une salutation. Le
+premier récit est ensuite réinjecté dans l'historique, et « hello » ne suffit plus
+à réorienter la conversation. Aucun historique n'est retiré avant les trois
+premières réponses : ce défaut précède la limite du contexte.
+
+La sensibilité aux formulations et la dérive avec l'historique sont observées ;
+leur cause précise dans l'apprentissage reste à établir. Le poids relatif des
+histoires et du dialogue est une hypothèse à examiner par une comparaison contrôlée.
+Le rapport conserve les échecs sans modifier les sorties, ajouter des réponses
+codées en dur ou normaliser silencieusement les messages.
+
+La suite de développement comporte désormais 30 tours : les 13 initiaux, les
+4 rapportés par le propriétaire, 9 salutations isolées avec variantes de casse et
+de ponctuation, et 4 tours de reprise du dialogue. Les variantes commencent chacune
+sans historique ; les sessions à plusieurs tours réinjectent les vraies sorties.
+Leurs questions exactes sont réservées par les préparateurs qui utilisent
+`reserved_prompts()`. Cela modifie la préparation future, pas les corpus et poids
+historiques déjà distribués ; leurs empreintes restent celles du run initial.
+Ces sondes sont connues et ne constituent pas un nouveau benchmark aveugle.
+
+Le fichier 0.4 n'est plus proposé comme correction du dialogue. Aucun nouveau poids
+n'est publié pour masquer cet échec. `/reset` vide seulement l'historique : il
+ne corrige ni les poids ni leur sensibilité aux formulations. Le prochain candidat
+devra être relu sur l'ensemble de ces échanges et sur des conversations séparées,
+avec ses régressions, avant d'être proposé pour un nouvel essai.
+
+### Essais supplémentaires après cet échec
+
+Le [rapport comparatif](../research/kira_model/results/dialogue-v04-replay-study.json)
+conserve deux prolongations de 2 000 étapes depuis le même export 0.4, avec le
+corpus de dialogue v2 inchangé : seed 42, lot/thread 1, LR 0,0002, warmup 50,
+cosinus et sélection toutes les 200 étapes. Une branche garde 25 % de répétition
+des histoires ; l'autre n'en utilise plus. Leurs meilleurs états sont sélectionnés
+sur la perte de validation avant de générer les 30 tours de conversation.
+Les questions exactes des 30 tours sont absentes du corpus de dialogue historique,
+y compris dans les tours suivants. Le split de test n'est pas encodé ni évalué.
+
+| État | Étape sélectionnée supplémentaire | Perte dialogue v2 | Perte histoires |
+|---|---:|---:|---:|
+| Export 0.4 distribué | 0 | 4,40809 | 2,40309 |
+| Prolongation avec 25 % d'histoires | 2 000 | 4,38644 | 2,42220 |
+| Prolongation sans histoires | 1 600 | 4,32293 | 2,75209 |
+
+Les deux branches échouent encore au dialogue. Avec répétition, « bsr » déclenche
+un autre récit ; sans répétition, il devient « Bha. ! Que souhaites-tu faire ? ».
+Quelques salutations s'améliorent mais la reprise du sujet et le rappel du contexte
+restent incohérents. Les deux branches dégradent aussi la réponse auparavant
+intelligible à la question sur sa préparation. La branche sans histoires commence
+la réponse sur l'accès à l'écran par « Oui » puis produit une phrase malformée.
+**Aucun de ces états n'est proposé comme poids corrigés.**
+
+C'est une comparaison de développement à une seule seed, pas une démonstration
+causale générale. Le budget d'étapes est identique ; le nombre, l'ordre des mises
+à jour de dialogue et le nombre total de tokens changent avec la répétition. La
+garde de perte des histoires est active seulement dans la branche avec répétition ;
+tous ses états mesurés la respectent, elle n'exclut donc aucun candidat de cette
+branche. Les temps mesurés sur le runner ne sont pas ceux du PC Windows.
+La baisse de perte seule ne corrige pas l'échec observé ; prolonger simplement
+ces données dans ces conditions ne fournit toujours pas une assistante utilisable.
+
 Les mesures de perte ne suffisent pas. Le rapport doit conserver les générations
-et les treize tours de `conversation_eval`, en réinjectant les sorties du modèle.
+et tous les tours de `conversation_eval`, en réinjectant les sorties du modèle.
 Les quatre questions du propriétaire sont des régressions connues de développement,
 pas un benchmark aveugle. Une proposition comme correction de cet essai nécessite
 qu'elles reçoivent toutes une réponse française intelligible et pertinente, avec

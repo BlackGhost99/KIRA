@@ -1,0 +1,1578 @@
+{
+  "format": "kira-dialogue-replay-study-20261022",
+  "question": "Does additional SFT with zero story replay repair the observed bsr conversation compared with another run retaining 25 percent replay?",
+  "scope": "single-seed-development-study-not-a-blind-general-benchmark",
+  "baseline_checkpoint_sha256": "0cc9cb5aa2d43f3b85d709ce2585a7474442de5de7e98153eb1e00deb6f4bfca",
+  "baseline_report": "dialogue-v04-owner-bsr-failure.json",
+  "baseline_language_validation": {
+    "loss_per_token": 2.4030894954694406,
+    "bits_per_utf8_byte": 1.1781569854327059,
+    "predicted_tokens": 18768,
+    "utf8_bytes": 55228
+  },
+  "probe_inputs_absent_from_historical_dialogue_corpus": true,
+  "selection": "best-heldout-dialogue-loss-at-fixed-200-step-intervals-not-conversation-probes",
+  "arms": {
+    "no-replay": {
+      "training": {
+        "format": "kira-seed-dialogue-0.3",
+        "status": "experimental-not-a-general-assistant",
+        "initialization": "continued-from-owner-kira-weights",
+        "signature": {
+          "base_sha256": "0cc9cb5aa2d43f3b85d709ce2585a7474442de5de7e98153eb1e00deb6f4bfca",
+          "data_sha256": "0bb849d84500dde26d7a1a812bc13bfb319019ed3b6be5d81f2fda3d2f3dbb0f",
+          "tokenizer_sha256": "8a9245ab8b5935c0db91c50b57312bfd38529724bed9c7f6c56d04ac77f863d7",
+          "config": {
+            "width": 128,
+            "heads": 4,
+            "layers": 4,
+            "context": 256
+          },
+          "roles": "virtual-user-assistant-v1",
+          "code_sha256": "9a056e2296797c00a2d0835c44b2c1092c3933570d73cd9f1342a0250dd94654",
+          "steps": 2000,
+          "batch_size": 1,
+          "threads": 1,
+          "seed": 42,
+          "lr": 0.0002,
+          "warmup": 50,
+          "eval_every": 200,
+          "replay_sha256": null,
+          "replay_ratio": 0.0,
+          "max_language_regression": 0.35,
+          "torch": "2.14.1+cpu",
+          "tokenizers": "0.23.3"
+        },
+        "parameters": 1088512,
+        "planned_steps": 2000,
+        "completed_steps": 2000,
+        "resumed_from_step": 0,
+        "segment_seconds": 45.328540373999886,
+        "seconds_per_step": 0.022664270186999944,
+        "assistant_tokens_seen": 133127,
+        "validation_initial": {
+          "assistant_loss_per_token": 4.4080865003060605,
+          "assistant_target_tokens": 11040
+        },
+        "language_tokens_seen": 0,
+        "validation_final": {
+          "assistant_loss_per_token": 4.325236312202786,
+          "assistant_target_tokens": 11040
+        },
+        "best_step": 1600,
+        "best_validation_loss": 4.322926435608795,
+        "language_validation_initial": null,
+        "language_validation_final": null,
+        "language_validation_at_best": null,
+        "language_guard_applied": false,
+        "promotion_status": "not-eligible-general-capabilities-not-demonstrated",
+        "assistant_only_dialogue_loss": true,
+        "skill_balanced_sampling": true,
+        "test_split_evaluated": false,
+        "examples": {
+          "train": 902,
+          "validation": 111,
+          "test": 96
+        },
+        "history": [
+          {
+            "step": 1,
+            "train_loss": 3.5855038166046143,
+            "lr": 4e-06,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 50,
+            "train_loss": 0.007519410457462072,
+            "lr": 0.0002,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 100,
+            "train_loss": 0.065249003469944,
+            "lr": 0.0001997081577320789,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 150,
+            "train_loss": 4.491015434265137,
+            "lr": 0.00019883452363741216,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 200,
+            "train_loss": 0.507024347782135,
+            "lr": 0.0001973847635683447,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 200,
+            "validation": {
+              "assistant_loss_per_token": 4.485478298905967,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": null,
+            "language_guard_passed": true
+          },
+          {
+            "step": 250,
+            "train_loss": 4.544774532318115,
+            "lr": 0.0001953682797752431,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 300,
+            "train_loss": 4.478222370147705,
+            "lr": 0.00019279814992929418,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 350,
+            "train_loss": 2.9884068965911865,
+            "lr": 0.0001896910423087889,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 400,
+            "train_loss": 0.01772438734769821,
+            "lr": 0.00018606710769894153,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 400,
+            "validation": {
+              "assistant_loss_per_token": 4.424469640980596,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": null,
+            "language_guard_passed": true
+          },
+          {
+            "step": 450,
+            "train_loss": 0.005076796282082796,
+            "lr": 0.00018194984870631512,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 500,
+            "train_loss": 0.009579126723110676,
+            "lr": 0.00017736596733539909,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 550,
+            "train_loss": 0.0052664452232420444,
+            "lr": 0.00017234519181586396,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 600,
+            "train_loss": 0.04911131411790848,
+            "lr": 0.00016692008380358395,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 600,
+            "validation": {
+              "assistant_loss_per_token": 4.415572312949361,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": null,
+            "language_guard_passed": true
+          },
+          {
+            "step": 650,
+            "train_loss": 3.247089385986328,
+            "lr": 0.00016112582720580402,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 700,
+            "train_loss": 3.406644105911255,
+            "lr": 0.000155,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 750,
+            "train_loss": 4.139665126800537,
+            "lr": 0.00014858233052627488,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 800,
+            "train_loss": 0.017038078978657722,
+            "lr": 0.00014191443983382822,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 800,
+            "validation": {
+              "assistant_loss_per_token": 4.407258683356686,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 800,
+            "language_validation": null,
+            "language_guard_passed": true
+          },
+          {
+            "step": 850,
+            "train_loss": 3.65899395942688,
+            "lr": 0.00013503957175248075,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 900,
+            "train_loss": 0.0009193094447255135,
+            "lr": 0.00012800231243984401,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 950,
+            "train_loss": 3.978768825531006,
+            "lr": 0.00012084830122297907,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1000,
+            "train_loss": 0.002797169843688607,
+            "lr": 0.00011362393460984737,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1000,
+            "validation": {
+              "assistant_loss_per_token": 4.399059489153434,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 1000,
+            "language_validation": null,
+            "language_guard_passed": true
+          },
+          {
+            "step": 1050,
+            "train_loss": 3.6541354656219482,
+            "lr": 0.00010637606539015268,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1100,
+            "train_loss": 3.5290582180023193,
+            "lr": 9.915169877702095e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1150,
+            "train_loss": 0.004290841985493898,
+            "lr": 9.199768756015603e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1200,
+            "train_loss": 4.539905548095703,
+            "lr": 8.496042824751926e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1200,
+            "validation": {
+              "assistant_loss_per_token": 4.363938334368277,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 1200,
+            "language_validation": null,
+            "language_guard_passed": true
+          },
+          {
+            "step": 1250,
+            "train_loss": 0.0031950934790074825,
+            "lr": 7.808556016617178e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1300,
+            "train_loss": 0.007060362491756678,
+            "lr": 7.141766947372512e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1350,
+            "train_loss": 0.003710192861035466,
+            "lr": 6.500000000000002e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1400,
+            "train_loss": 0.011405479162931442,
+            "lr": 5.887417279419599e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1400,
+            "validation": {
+              "assistant_loss_per_token": 4.341006193299225,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 1400,
+            "language_validation": null,
+            "language_guard_passed": true
+          },
+          {
+            "step": 1450,
+            "train_loss": 0.001707478892058134,
+            "lr": 5.3079916196416055e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1500,
+            "train_loss": 0.0012550691608339548,
+            "lr": 4.7654808184136064e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1550,
+            "train_loss": 4.2271647453308105,
+            "lr": 4.2634032664600895e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1600,
+            "train_loss": 3.080476999282837,
+            "lr": 3.805015129368492e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1600,
+            "validation": {
+              "assistant_loss_per_token": 4.322926435608795,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 1600,
+            "language_validation": null,
+            "language_guard_passed": true
+          },
+          {
+            "step": 1650,
+            "train_loss": 3.460421323776245,
+            "lr": 3.393289230105849e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1700,
+            "train_loss": 0.003753321710973978,
+            "lr": 3.030895769121112e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1750,
+            "train_loss": 0.0013647021260112524,
+            "lr": 2.7201850070705826e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1800,
+            "train_loss": 0.0007243363070301712,
+            "lr": 2.463172022475691e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1800,
+            "validation": {
+              "assistant_loss_per_token": 4.330875020787336,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 1600,
+            "language_validation": null,
+            "language_guard_passed": true
+          },
+          {
+            "step": 1850,
+            "train_loss": 3.3034791946411133,
+            "lr": 2.261523643165532e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1900,
+            "train_loss": 2.6384356021881104,
+            "lr": 2.1165476362587846e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1950,
+            "train_loss": 0.001055889530107379,
+            "lr": 2.0291842267921108e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 2000,
+            "train_loss": 0.003640382317826152,
+            "lr": 2e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 2000,
+            "validation": {
+              "assistant_loss_per_token": 4.325236312202786,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 1600,
+            "language_validation": null,
+            "language_guard_passed": true
+          }
+        ]
+      },
+      "selected_checkpoint_sha256": "465d70ec271b25658f74c0a51da92b3f14eb0cba2a96444647af67e61b4d5f44",
+      "selected_language_validation": {
+        "loss_per_token": 2.7520926458044936,
+        "bits_per_utf8_byte": 1.3492619319111725,
+        "predicted_tokens": 18768,
+        "utf8_bytes": 55228
+      },
+      "free_conversation": {
+        "format": "kira-free-conversation-eval-v1",
+        "cases": [
+          {
+            "id": "owner-session-20261022",
+            "origin": "owner-reported-development-failure",
+            "turns": [
+              {
+                "user": "bjr",
+                "response": "Bonjour ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation en français, réponse intelligible."
+              },
+              {
+                "user": "ca va?",
+                "response": "Je suis disponible pour notre échange. Que veux-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Réponse courte et pertinente ; pas de sentiments humains inventés."
+              },
+              {
+                "user": "Comment t'appelles tu ?",
+                "response": "Je m'appelle KIRA.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Se présente comme KIRA dans une phrase française cohérente."
+              },
+              {
+                "user": "T'es sûr que t'es prête ?",
+                "response": "Je suis encore expérifier mes réponses.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Reconnaît ses limites expérimentales sans inventer une capacité."
+              }
+            ]
+          },
+          {
+            "id": "owner-session-bsr-20261022",
+            "origin": "owner-reported-development-failure",
+            "turns": [
+              {
+                "user": "bsr",
+                "response": "Bha. ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Répond à la salutation ; ne démarre pas une histoire non demandée."
+              },
+              {
+                "user": "hein",
+                "response": "Je suis disponible pour notre échange. Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Reformule ou demande ce qui est incompris ; ne poursuit pas le récit hors sujet."
+              },
+              {
+                "user": "hello",
+                "response": "Tu peux m'appeler KIRA.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Suit la nouvelle salutation malgré son propre historique précédent."
+              },
+              {
+                "user": "suite",
+                "response": "Non.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Suite cohérente avec l'échange ou demande de précision, sans fragments répétitifs."
+              }
+            ]
+          },
+          {
+            "id": "presentation",
+            "origin": "authored-development-probe",
+            "turns": [
+              {
+                "user": "Bonsoir, tu peux te présenter ?",
+                "response": "Oui, je suis un modèle expérimental. Je suis un modèle expérimental.",
+                "automatic_flags": [
+                  "required-word-absent:KIRA"
+                ],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Présentation française cohérente, identité KIRA."
+              },
+              {
+                "user": "Réponds avec une seule phrase : à quoi sers-tu ?",
+                "response": "Non. Je peux me tromper.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Une phrase utile et honnête, adaptée à cette version."
+              },
+              {
+                "user": "Est-ce que tu peux voir ce qui est sur mon écran ?",
+                "response": "Oui. Je m'ai pas de sentiments.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "N'annonce pas un accès à l'écran dont ce terminal ne dispose pas."
+              }
+            ]
+          },
+          {
+            "id": "clarification",
+            "origin": "authored-development-probe",
+            "turns": [
+              {
+                "user": "Je ne sais pas par où commencer mon projet.",
+                "response": "Tu peux-tu parler ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Demande l'objectif ou propose une première étape concrète."
+              },
+              {
+                "user": "Je veux écrire mon premier programme Python.",
+                "response": "Tu peux m'appeler KIRA.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Suit le sujet Python, propose une étape accessible."
+              },
+              {
+                "user": "Fais plus court, s'il te plaît.",
+                "response": "Je suis KIRA, un modèle expérimental.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Raccourcit sa réponse en gardant le sujet du tour précédent."
+              }
+            ]
+          },
+          {
+            "id": "context",
+            "origin": "authored-development-probe",
+            "turns": [
+              {
+                "user": "Dans cette histoire, une boîte verte contient une clé.",
+                "response": "La couleur est une spécible de la couleur, la couleur, la couleur, la couleur, la couleur, la c'est une couleur. La fille scieuse, la c'est-fère, la c'",
+                "automatic_flags": [
+                  "repeated-word-triple"
+                ],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Accuse réception sans inventer le contenu d'autres boîtes."
+              },
+              {
+                "user": "Que contient la boîte verte ?",
+                "response": "\n\nEn s'est- la c'est-t-t-fère, la c'estion de la couleur.",
+                "automatic_flags": [
+                  "required-word-absent:clé"
+                ],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Répond une clé en s'appuyant sur le contexte."
+              },
+              {
+                "user": "Et quelle est la couleur de cette clé ?",
+                "response": ".",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "La couleur de la clé est inconnue ; vert qualifiait la boîte."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-1",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "Bsr",
+                "response": "Bons ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-2",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "BSR",
+                "response": "Salut ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-3",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "bonsoir",
+                "response": "Bonjour ! Je suis KIRA. Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-4",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "Bonsoir",
+                "response": "Bonjour ! Je suis KIRA. Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-5",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "bonsoir !",
+                "response": "Bonne soirée !",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-6",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "salut",
+                "response": "Salut ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-7",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "Salut",
+                "response": "Salut ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-8",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "hello",
+                "response": "Bonjour ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-9",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "coucou",
+                "response": "Salut ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-history-recovery",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "Salut",
+                "response": "Salut ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente, sans récit non demandé."
+              },
+              {
+                "user": "hello",
+                "response": "Je suis KIRA.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Répond à la salutation en tenant compte de son propre historique."
+              },
+              {
+                "user": "Je ne comprends pas ce que tu racontes.",
+                "response": "Je suis encore un modèle expérimental.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Reformule ou demande une précision, sans amplifier sa réponse hors sujet."
+              },
+              {
+                "user": "Dis-moi juste ton nom.",
+                "response": "Non. Mes connaissances et mes capacités sont limitées.",
+                "automatic_flags": [
+                  "required-word-absent:KIRA"
+                ],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Se présente brièvement comme KIRA après les tours précédents."
+              }
+            ]
+          }
+        ],
+        "decoding": "greedy",
+        "max_new_tokens": 64,
+        "history": "model-generated-answers-as-in-chat-no-reference-answers",
+        "automatic_flagged_turns": 4,
+        "human_review": "required-unscored",
+        "general_assistant_qualified": false,
+        "scope": "development-regressions-including-observed-failure-not-a-blind-benchmark",
+        "checkpoint_sha256": "465d70ec271b25658f74c0a51da92b3f14eb0cba2a96444647af67e61b4d5f44",
+        "suite_sha256": "ab2b9347bab91ccb688ddff272e70942a85f9d78e04155a0068f8f2d7d368c4a"
+      },
+      "qualified_as_basic_conversation_fix": false
+    },
+    "replay-25": {
+      "training": {
+        "format": "kira-seed-dialogue-0.3",
+        "status": "experimental-not-a-general-assistant",
+        "initialization": "continued-from-owner-kira-weights",
+        "signature": {
+          "base_sha256": "0cc9cb5aa2d43f3b85d709ce2585a7474442de5de7e98153eb1e00deb6f4bfca",
+          "data_sha256": "0bb849d84500dde26d7a1a812bc13bfb319019ed3b6be5d81f2fda3d2f3dbb0f",
+          "tokenizer_sha256": "8a9245ab8b5935c0db91c50b57312bfd38529724bed9c7f6c56d04ac77f863d7",
+          "config": {
+            "width": 128,
+            "heads": 4,
+            "layers": 4,
+            "context": 256
+          },
+          "roles": "virtual-user-assistant-v1",
+          "code_sha256": "9a056e2296797c00a2d0835c44b2c1092c3933570d73cd9f1342a0250dd94654",
+          "steps": 2000,
+          "batch_size": 1,
+          "threads": 1,
+          "seed": 42,
+          "lr": 0.0002,
+          "warmup": 50,
+          "eval_every": 200,
+          "replay_sha256": "283e4feb5150329b9149dd1b3185a8e227311e906dea39007c14b1ed92fd7536",
+          "replay_ratio": 0.25,
+          "max_language_regression": 0.35,
+          "torch": "2.14.1+cpu",
+          "tokenizers": "0.23.3"
+        },
+        "parameters": 1088512,
+        "planned_steps": 2000,
+        "completed_steps": 2000,
+        "resumed_from_step": 0,
+        "segment_seconds": 63.53467849200001,
+        "seconds_per_step": 0.031767339246000004,
+        "assistant_tokens_seen": 102945,
+        "validation_initial": {
+          "assistant_loss_per_token": 4.4080865003060605,
+          "assistant_target_tokens": 11040
+        },
+        "language_tokens_seen": 115032,
+        "validation_final": {
+          "assistant_loss_per_token": 4.386438386336617,
+          "assistant_target_tokens": 11040
+        },
+        "best_step": 2000,
+        "best_validation_loss": 4.386438386336617,
+        "language_validation_initial": {
+          "loss_per_token": 2.4030894954694406,
+          "bits_per_utf8_byte": 1.1781569854327059,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "language_validation_final": {
+          "loss_per_token": 2.422204375521098,
+          "bits_per_utf8_byte": 1.187528392324137,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "language_validation_at_best": {
+          "loss_per_token": 2.422204375521098,
+          "bits_per_utf8_byte": 1.187528392324137,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "language_guard_applied": true,
+        "promotion_status": "not-eligible-general-capabilities-not-demonstrated",
+        "assistant_only_dialogue_loss": true,
+        "skill_balanced_sampling": true,
+        "test_split_evaluated": false,
+        "examples": {
+          "train": 902,
+          "validation": 111,
+          "test": 96
+        },
+        "history": [
+          {
+            "step": 1,
+            "train_loss": 3.9124577045440674,
+            "lr": 4e-06,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 50,
+            "train_loss": 4.046830177307129,
+            "lr": 0.0002,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 100,
+            "train_loss": 1.8245009183883667,
+            "lr": 0.0001997081577320789,
+            "objective": "language_replay"
+          },
+          {
+            "step": 150,
+            "train_loss": 0.03822392597794533,
+            "lr": 0.00019883452363741216,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 200,
+            "train_loss": 0.06912518292665482,
+            "lr": 0.0001973847635683447,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 200,
+            "validation": {
+              "assistant_loss_per_token": 4.486439552859983,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": {
+              "loss_per_token": 2.4825443643234983,
+              "bits_per_utf8_byte": 1.217111135473115,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          },
+          {
+            "step": 250,
+            "train_loss": 2.157747745513916,
+            "lr": 0.0001953682797752431,
+            "objective": "language_replay"
+          },
+          {
+            "step": 300,
+            "train_loss": 0.003282316494733095,
+            "lr": 0.00019279814992929418,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 350,
+            "train_loss": 0.002314252546057105,
+            "lr": 0.0001896910423087889,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 400,
+            "train_loss": 0.011083527468144894,
+            "lr": 0.00018606710769894153,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 400,
+            "validation": {
+              "assistant_loss_per_token": 4.486912392878878,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": {
+              "loss_per_token": 2.4891572845663053,
+              "bits_per_utf8_byte": 1.2203532361909037,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          },
+          {
+            "step": 450,
+            "train_loss": 0.10663530975580215,
+            "lr": 0.00018194984870631512,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 500,
+            "train_loss": 0.027057616040110588,
+            "lr": 0.00017736596733539909,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 550,
+            "train_loss": 0.17906373739242554,
+            "lr": 0.00017234519181586396,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 600,
+            "train_loss": 3.976297378540039,
+            "lr": 0.00016692008380358395,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 600,
+            "validation": {
+              "assistant_loss_per_token": 4.481773481507232,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": {
+              "loss_per_token": 2.4903893290374994,
+              "bits_per_utf8_byte": 1.2209572677106777,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          },
+          {
+            "step": 650,
+            "train_loss": 0.0061963340267539024,
+            "lr": 0.00016112582720580402,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 700,
+            "train_loss": 0.0075812386348843575,
+            "lr": 0.000155,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 750,
+            "train_loss": 1.7752621173858643,
+            "lr": 0.00014858233052627488,
+            "objective": "language_replay"
+          },
+          {
+            "step": 800,
+            "train_loss": 0.003338075475767255,
+            "lr": 0.00014191443983382822,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 800,
+            "validation": {
+              "assistant_loss_per_token": 4.451399435513261,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": {
+              "loss_per_token": 2.4837182627106364,
+              "bits_per_utf8_byte": 1.2176866598502145,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          },
+          {
+            "step": 850,
+            "train_loss": 1.9588782787322998,
+            "lr": 0.00013503957175248075,
+            "objective": "language_replay"
+          },
+          {
+            "step": 900,
+            "train_loss": 3.6073551177978516,
+            "lr": 0.00012800231243984401,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 950,
+            "train_loss": 0.01899336837232113,
+            "lr": 0.00012084830122297907,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1000,
+            "train_loss": 3.860506296157837,
+            "lr": 0.00011362393460984737,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1000,
+            "validation": {
+              "assistant_loss_per_token": 4.436623045327007,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": {
+              "loss_per_token": 2.457519777697167,
+              "bits_per_utf8_byte": 1.204842390760543,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          },
+          {
+            "step": 1050,
+            "train_loss": 2.07411789894104,
+            "lr": 0.00010637606539015268,
+            "objective": "language_replay"
+          },
+          {
+            "step": 1100,
+            "train_loss": 0.0022233715280890465,
+            "lr": 9.915169877702095e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1150,
+            "train_loss": 3.177598714828491,
+            "lr": 9.199768756015603e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1200,
+            "train_loss": 3.323969602584839,
+            "lr": 8.496042824751926e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1200,
+            "validation": {
+              "assistant_loss_per_token": 4.429819704138715,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": {
+              "loss_per_token": 2.444909348105734,
+              "bits_per_utf8_byte": 1.1986599053639464,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          },
+          {
+            "step": 1250,
+            "train_loss": 2.1056442260742188,
+            "lr": 7.808556016617178e-05,
+            "objective": "language_replay"
+          },
+          {
+            "step": 1300,
+            "train_loss": 2.5571422576904297,
+            "lr": 7.141766947372512e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1350,
+            "train_loss": 0.023030675947666168,
+            "lr": 6.500000000000002e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1400,
+            "train_loss": 4.398664474487305,
+            "lr": 5.887417279419599e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1400,
+            "validation": {
+              "assistant_loss_per_token": 4.417783875396286,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": {
+              "loss_per_token": 2.443375190556405,
+              "bits_per_utf8_byte": 1.1979077575821415,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          },
+          {
+            "step": 1450,
+            "train_loss": 4.001820087432861,
+            "lr": 5.3079916196416055e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1500,
+            "train_loss": 2.079939603805542,
+            "lr": 4.7654808184136064e-05,
+            "objective": "language_replay"
+          },
+          {
+            "step": 1550,
+            "train_loss": 0.010367384180426598,
+            "lr": 4.2634032664600895e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1600,
+            "train_loss": 2.054015874862671,
+            "lr": 3.805015129368492e-05,
+            "objective": "language_replay"
+          },
+          {
+            "step": 1600,
+            "validation": {
+              "assistant_loss_per_token": 4.419959292204484,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 0,
+            "language_validation": {
+              "loss_per_token": 2.4359034043748666,
+              "bits_per_utf8_byte": 1.1942445826982948,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          },
+          {
+            "step": 1650,
+            "train_loss": 2.592618465423584,
+            "lr": 3.393289230105849e-05,
+            "objective": "language_replay"
+          },
+          {
+            "step": 1700,
+            "train_loss": 3.47613263130188,
+            "lr": 3.030895769121112e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1750,
+            "train_loss": 3.4077086448669434,
+            "lr": 2.7201850070705826e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1800,
+            "train_loss": 2.7153818607330322,
+            "lr": 2.463172022475691e-05,
+            "objective": "language_replay"
+          },
+          {
+            "step": 1800,
+            "validation": {
+              "assistant_loss_per_token": 4.392675582222316,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 1800,
+            "language_validation": {
+              "loss_per_token": 2.4275751573248794,
+              "bits_per_utf8_byte": 1.1901615127764922,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          },
+          {
+            "step": 1850,
+            "train_loss": 1.7557759284973145,
+            "lr": 2.261523643165532e-05,
+            "objective": "language_replay"
+          },
+          {
+            "step": 1900,
+            "train_loss": 2.9098193645477295,
+            "lr": 2.1165476362587846e-05,
+            "objective": "assistant_response"
+          },
+          {
+            "step": 1950,
+            "train_loss": 2.262760639190674,
+            "lr": 2.0291842267921108e-05,
+            "objective": "language_replay"
+          },
+          {
+            "step": 2000,
+            "train_loss": 1.9411733150482178,
+            "lr": 2e-05,
+            "objective": "language_replay"
+          },
+          {
+            "step": 2000,
+            "validation": {
+              "assistant_loss_per_token": 4.386438386336617,
+              "assistant_target_tokens": 11040
+            },
+            "best_step": 2000,
+            "language_validation": {
+              "loss_per_token": 2.422204375521098,
+              "bits_per_utf8_byte": 1.187528392324137,
+              "predicted_tokens": 18768,
+              "utf8_bytes": 55228
+            },
+            "language_guard_passed": true
+          }
+        ]
+      },
+      "selected_checkpoint_sha256": "b0714ae7462a797b36c1a901d3dfb09337c56ab6750fb8dc05750fa426a8104f",
+      "selected_language_validation": {
+        "loss_per_token": 2.422204375521098,
+        "bits_per_utf8_byte": 1.187528392324137,
+        "predicted_tokens": 18768,
+        "utf8_bytes": 55228
+      },
+      "free_conversation": {
+        "format": "kira-free-conversation-eval-v1",
+        "cases": [
+          {
+            "id": "owner-session-20261022",
+            "origin": "owner-reported-development-failure",
+            "turns": [
+              {
+                "user": "bjr",
+                "response": "Bonjour ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation en français, réponse intelligible."
+              },
+              {
+                "user": "ca va?",
+                "response": "Je suis disponible pour notre échange. Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Réponse courte et pertinente ; pas de sentiments humains inventés."
+              },
+              {
+                "user": "Comment t'appelles tu ?",
+                "response": "Je m'appelle KIRA.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Se présente comme KIRA dans une phrase française cohérente."
+              },
+              {
+                "user": "T'es sûr que t'es prête ?",
+                "response": "Je suis encore essayer de tes.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Reconnaît ses limites expérimentales sans inventer une capacité."
+              }
+            ]
+          },
+          {
+            "id": "owner-session-bsr-20261022",
+            "origin": "owner-reported-development-failure",
+            "turns": [
+              {
+                "user": "bsr",
+                "response": "cillait explorer la forêt. Un jour, il trouva une belle boîte rouge. Il décida de la ramener chez lui pour le ramener chez lui.\n\nLe lendemain, Léo se mit à l'arbre pour voir ce qu'il y",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Répond à la salutation ; ne démarre pas une histoire non demandée."
+              },
+              {
+                "user": "hein",
+                "response": "ancer. Léo était très content et ne pouvait pas. Léo était très triste. Il décida de l'aider et de l'aider. Mais soudain, il vit un petit renard qui lui dit : \"Je suis triste, je",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Reformule ou demande ce qui est incompris ; ne poursuit pas le récit hors sujet."
+              },
+              {
+                "user": "hello",
+                "response": "-tu m'ai trouvé !\" Léo était très content et lui pour lui pour lui pour lui faire.\" Léo était très triste, mais il ne savait pas comment il ne pouvait plus jamais.\n\nLéo était très triste et il ne pouvait plus jamais.",
+                "automatic_flags": [
+                  "repeated-word-triple"
+                ],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Suit la nouvelle salutation malgré son propre historique précédent."
+              },
+              {
+                "user": "suite",
+                "response": "-tu m'aimère. Léo était très triste. Léo était très triste. Il décida de l'aider. Léo et lui dit à Léo. Il : \"Je vais t'aider à la forêt, je vais",
+                "automatic_flags": [],
+                "discarded_history_pairs": 1,
+                "human_review_criterion": "Suite cohérente avec l'échange ou demande de précision, sans fragments répétitifs."
+              }
+            ]
+          },
+          {
+            "id": "presentation",
+            "origin": "authored-development-probe",
+            "turns": [
+              {
+                "user": "Bonsoir, tu peux te présenter ?",
+                "response": "Oui. Je suis disponible pour notre échange. Que souhaites-tu faire ?",
+                "automatic_flags": [
+                  "required-word-absent:KIRA"
+                ],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Présentation française cohérente, identité KIRA."
+              },
+              {
+                "user": "Réponds avec une seule phrase : à quoi sers-tu ?",
+                "response": "Je n'ai pas de sensations humaines. Je peux essayer de t'aider.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Une phrase utile et honnête, adaptée à cette version."
+              },
+              {
+                "user": "Est-ce que tu peux voir ce qui est sur mon écran ?",
+                "response": "Ce terminal de dialogue ne contrôle pas ton ordinateur.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "N'annonce pas un accès à l'écran dont ce terminal ne dispose pas."
+              }
+            ]
+          },
+          {
+            "id": "clarification",
+            "origin": "authored-development-probe",
+            "turns": [
+              {
+                "user": "Je ne sais pas par où commencer mon projet.",
+                "response": "Bonjour ! Je suis KIRA.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Demande l'objectif ou propose une première étape concrète."
+              },
+              {
+                "user": "Je veux écrire mon premier programme Python.",
+                "response": "Je suis KIRA.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Suit le sujet Python, propose une étape accessible."
+              },
+              {
+                "user": "Fais plus court, s'il te plaît.",
+                "response": "Je suis disponible pour notre échange.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Raccourcit sa réponse en gardant le sujet du tour précédent."
+              }
+            ]
+          },
+          {
+            "id": "context",
+            "origin": "authored-development-probe",
+            "turns": [
+              {
+                "user": "Dans cette histoire, une boîte verte contient une clé.",
+                "response": "La fée est la couleur de la forme et la forme.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Accuse réception sans inventer le contenu d'autres boîtes."
+              },
+              {
+                "user": "Que contient la boîte verte ?",
+                "response": "La fée est la couleur de la couleur des œuvres et des œuvres. L'écureucas était très fée et décida de l'aider.\n\nLe lendemain, Léo se réveilla dans",
+                "automatic_flags": [
+                  "required-word-absent:clé"
+                ],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Répond une clé en s'appuyant sur le contexte."
+              },
+              {
+                "user": "Et quelle est la couleur de cette clé ?",
+                "response": "Oui, Léa la magique.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "La couleur de la clé est inconnue ; vert qualifiait la boîte."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-1",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "Bsr",
+                "response": "Bons ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-2",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "BSR",
+                "response": "Salut ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-3",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "bonsoir",
+                "response": "Bonjour ! Je suis KIRA. Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-4",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "Bonsoir",
+                "response": "Bonjour ! Je suis KIRA. Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-5",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "bonsoir !",
+                "response": "Bonne soirée !",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-6",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "salut",
+                "response": "Salut ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-7",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "Salut",
+                "response": "Salut ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-8",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "hello",
+                "response": "Bonjour ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-variant-9",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "coucou",
+                "response": "Avec plaisir. Je suis KIRA, un modèle expérimental.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+              }
+            ]
+          },
+          {
+            "id": "greeting-history-recovery",
+            "origin": "authored-development-probe-after-owner-failure",
+            "turns": [
+              {
+                "user": "Salut",
+                "response": "Salut ! Que souhaites-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Salutation pertinente, sans récit non demandé."
+              },
+              {
+                "user": "hello",
+                "response": "Je n'ai pas de sensations humaines. Je peux essayer de t'aider.",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Répond à la salutation en tenant compte de son propre historique."
+              },
+              {
+                "user": "Je ne comprends pas ce que tu racontes.",
+                "response": "Ce termines-tu faire ?",
+                "automatic_flags": [],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Reformule ou demande une précision, sans amplifier sa réponse hors sujet."
+              },
+              {
+                "user": "Dis-moi juste ton nom.",
+                "response": "Non. Mes connaissances et mes capacités sont limitées.",
+                "automatic_flags": [
+                  "required-word-absent:KIRA"
+                ],
+                "discarded_history_pairs": 0,
+                "human_review_criterion": "Se présente brièvement comme KIRA après les tours précédents."
+              }
+            ]
+          }
+        ],
+        "decoding": "greedy",
+        "max_new_tokens": 64,
+        "history": "model-generated-answers-as-in-chat-no-reference-answers",
+        "automatic_flagged_turns": 4,
+        "human_review": "required-unscored",
+        "general_assistant_qualified": false,
+        "scope": "development-regressions-including-observed-failure-not-a-blind-benchmark",
+        "checkpoint_sha256": "b0714ae7462a797b36c1a901d3dfb09337c56ab6750fb8dc05750fa426a8104f",
+        "suite_sha256": "ab2b9347bab91ccb688ddff272e70942a85f9d78e04155a0068f8f2d7d368c4a"
+      },
+      "qualified_as_basic_conversation_fix": false
+    }
+  },
+  "test_split_evaluated": false,
+  "qualification": {
+    "general_assistant_qualified": false,
+    "basic_conversation_fix_qualified": false,
+    "new_weights_released": false,
+    "reviewer": "Codex semantic review, not independent human rating",
+    "conclusion": "Both continuations fail the owner conversation and regress the previously coherent readiness answer. Lower validation loss does not imply a usable assistant. Removing replay changes the failure from narratives to malformed or unrelated chat formulas.",
+    "limits": [
+      "One seed, one small model and one existing data set; no statistical or general-intelligence conclusion.",
+      "At the same optimizer-step budget, replay changes the number and order of dialogue updates and total tokens seen.",
+      "The language guard is configured only for the replay arm; every measured replay-arm state passed it, so no checkpoint was excluded by that guard.",
+      "All conversation probes are now known development cases; no claim of independent human evaluation."
+    ]
+  }
+}

@@ -21,6 +21,12 @@ SUITE = [
           "review": "Se présente comme KIRA dans une phrase française cohérente."},
          {"user": "T'es sûr que t'es prête ?",
           "review": "Reconnaît ses limites expérimentales sans inventer une capacité."}]},
+    {"id": "owner-session-bsr-20261022", "origin": "owner-reported-development-failure",
+     "turns": [
+         {"user": "bsr", "review": "Répond à la salutation ; ne démarre pas une histoire non demandée."},
+         {"user": "hein", "review": "Reformule ou demande ce qui est incompris ; ne poursuit pas le récit hors sujet."},
+         {"user": "hello", "review": "Suit la nouvelle salutation malgré son propre historique précédent."},
+         {"user": "suite", "review": "Suite cohérente avec l'échange ou demande de précision, sans fragments répétitifs."}]},
     {"id": "presentation", "origin": "authored-development-probe",
      "turns": [
          {"user": "Bonsoir, tu peux te présenter ?", "required_word": "KIRA",
@@ -45,6 +51,22 @@ SUITE = [
           "review": "Répond une clé en s'appuyant sur le contexte."},
          {"user": "Et quelle est la couleur de cette clé ?",
           "review": "La couleur de la clé est inconnue ; vert qualifiait la boîte."}]},
+    # Chaque variante commence sans historique. Aucun texte n'est normalisé avant
+    # l'inférence : une réussite sur une majuscule ne doit pas masquer un échec sur
+    # une minuscule. Ce sont désormais des sondes de développement connues.
+    *[{"id": "greeting-variant-" + str(i), "origin": "authored-development-probe-after-owner-failure",
+       "turns": [{"user": text,
+                  "review": "Salutation pertinente et intelligible, sans récit non demandé."}]}
+      for i, text in enumerate(("Bsr", "BSR", "bonsoir", "Bonsoir", "bonsoir !",
+                                "salut", "Salut", "hello", "coucou"), start=1)],
+    {"id": "greeting-history-recovery", "origin": "authored-development-probe-after-owner-failure",
+     "turns": [
+         {"user": "Salut", "review": "Salutation pertinente, sans récit non demandé."},
+         {"user": "hello", "review": "Répond à la salutation en tenant compte de son propre historique."},
+         {"user": "Je ne comprends pas ce que tu racontes.",
+          "review": "Reformule ou demande une précision, sans amplifier sa réponse hors sujet."},
+         {"user": "Dis-moi juste ton nom.", "required_word": "KIRA",
+          "review": "Se présente brièvement comme KIRA après les tours précédents."}]},
 ]
 
 

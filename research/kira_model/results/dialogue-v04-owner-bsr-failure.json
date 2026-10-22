@@ -1,0 +1,342 @@
+{
+  "format": "kira-free-conversation-eval-v1",
+  "cases": [
+    {
+      "id": "owner-session-20261022",
+      "origin": "owner-reported-development-failure",
+      "turns": [
+        {
+          "user": "bjr",
+          "response": "Bonjour ! Que souhaites-tu faire ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation en français, réponse intelligible."
+        },
+        {
+          "user": "ca va?",
+          "response": "Oui. Je suis disponible pour notre échange. Que souhaites-tu faire ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Réponse courte et pertinente ; pas de sentiments humains inventés."
+        },
+        {
+          "user": "Comment t'appelles tu ?",
+          "response": "Je m'appelle KIRA.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Se présente comme KIRA dans une phrase française cohérente."
+        },
+        {
+          "user": "T'es sûr que t'es prête ?",
+          "response": "Non. Je suis encore expérimentale et je peux me tromper.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Reconnaît ses limites expérimentales sans inventer une capacité."
+        }
+      ]
+    },
+    {
+      "id": "owner-session-bsr-20261022",
+      "origin": "owner-reported-development-failure",
+      "turns": [
+        {
+          "user": "bsr",
+          "response": "cas. Lulu aimait beaucoup jouer dans la forêt. Un jour, il trouva une belle boîte magique. Il décida de la montrer à ses amis.\n\nEn chemin, Lulu rencontra un écureuil qui semblait.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Répond à la salutation ; ne démarre pas une histoire non demandée."
+        },
+        {
+          "user": "hein",
+          "response": "Soudain, un écureuil qui semblait très triste. Lulu, qui avait un petit magique qui avait un petit magique. Lulu décida de l'aider. Il chercher le ramener chez lui.\n\nLulu, le",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Reformule ou demande ce qui est incompris ; ne poursuit pas le récit hors sujet."
+        },
+        {
+          "user": "hello",
+          "response": "oux, il trouva la souris, lui dit : \"Je suis encore plus. Lulu, je peux !\" Lulu, Lulu, il savait que Lulu était très triste. Il décida de partager le cœur et de l",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Suit la nouvelle salutation malgré son propre historique précédent."
+        },
+        {
+          "user": "suite",
+          "response": "oux. Lulu était très heureux qu'il ne savait pas. Lulu était très triste. Il décida de ne pouvait plus jouer avec ses amis.\n\nLulu était très triste, mais il ne savait pas quoi faire. Il décida de partager le",
+          "automatic_flags": [
+            "repeated-word-triple"
+          ],
+          "discarded_history_pairs": 1,
+          "human_review_criterion": "Suite cohérente avec l'échange ou demande de précision, sans fragments répétitifs."
+        }
+      ]
+    },
+    {
+      "id": "presentation",
+      "origin": "authored-development-probe",
+      "turns": [
+        {
+          "user": "Bonsoir, tu peux te présenter ?",
+          "response": "Je n'ai pas de sentiments humains. Je suis un modèle expérimental.",
+          "automatic_flags": [
+            "required-word-absent:KIRA"
+          ],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Présentation française cohérente, identité KIRA."
+        },
+        {
+          "user": "Réponds avec une seule phrase : à quoi sers-tu ?",
+          "response": "Je n'ai pas de sentiments humains. Je peux participer à cet échange.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Une phrase utile et honnête, adaptée à cette version."
+        },
+        {
+          "user": "Est-ce que tu peux voir ce qui est sur mon écran ?",
+          "response": "Non.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "N'annonce pas un accès à l'écran dont ce terminal ne dispose pas."
+        }
+      ]
+    },
+    {
+      "id": "clarification",
+      "origin": "authored-development-probe",
+      "turns": [
+        {
+          "user": "Je ne sais pas par où commencer mon projet.",
+          "response": "Bonjour ! Je suis KIRA.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Demande l'objectif ou propose une première étape concrète."
+        },
+        {
+          "user": "Je veux écrire mon premier programme Python.",
+          "response": "Je suis KIRA.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Suit le sujet Python, propose une étape accessible."
+        },
+        {
+          "user": "Fais plus court, s'il te plaît.",
+          "response": "Je suis disponible pour notre échange.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Raccourcit sa réponse en gardant le sujet du tour précédent."
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "origin": "authored-development-probe",
+      "turns": [
+        {
+          "user": "Dans cette histoire, une boîte verte contient une clé.",
+          "response": "La fée est l'intérique de la calculation de la calculation de la catique.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Accuse réception sans inventer le contenu d'autres boîtes."
+        },
+        {
+          "user": "Que contient la boîte verte ?",
+          "response": "La partie de la calculation de la calculation de la culture de la culture de la culture.",
+          "automatic_flags": [
+            "repeated-word-triple",
+            "required-word-absent:clé"
+          ],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Répond une clé en s'appuyant sur le contexte."
+        },
+        {
+          "user": "Et quelle est la couleur de cette clé ?",
+          "response": "La fée de la calculation de la culture de la culture de la culture de la culture de la culture, la culture de la culture.",
+          "automatic_flags": [
+            "repeated-word-triple"
+          ],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "La couleur de la clé est inconnue ; vert qualifiait la boîte."
+        }
+      ]
+    },
+    {
+      "id": "greeting-variant-1",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "Bsr",
+          "response": "Bons ! Que souhaites-tu faire ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+        }
+      ]
+    },
+    {
+      "id": "greeting-variant-2",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "BSR",
+          "response": "Salut ! Que souhaites-tu faire ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+        }
+      ]
+    },
+    {
+      "id": "greeting-variant-3",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "bonsoir",
+          "response": " vivait dans un joli jardin. Un jour, il décida de la montrer à ses amis. Il prit son ami l'hors, mais il ne savait pas quoi faire. Il chercha partout dans le jardin.\n\nLéo était très triste",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+        }
+      ]
+    },
+    {
+      "id": "greeting-variant-4",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "Bonsoir",
+          "response": "Bonjour ! Je suis KIRA. Que souhaites-tu faire ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+        }
+      ]
+    },
+    {
+      "id": "greeting-variant-5",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "bonsoir !",
+          "response": "Bonne soirée !",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+        }
+      ]
+    },
+    {
+      "id": "greeting-variant-6",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "salut",
+          "response": "Dans un petit modèle. Léo aimait jouer dans le jardin de sa maison. Un jour, il trouva une belle fleur rouge. Il décida de la ramener chez lui pour le ramener chez lui.\n\nLéo était si heureux",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+        }
+      ]
+    },
+    {
+      "id": "greeting-variant-7",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "Salut",
+          "response": "Salut ! Que souhaites-tu faire ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+        }
+      ]
+    },
+    {
+      "id": "greeting-variant-8",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "hello",
+          "response": "Bonjour ! Que souhaites-tu faire ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+        }
+      ]
+    },
+    {
+      "id": "greeting-variant-9",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "coucou",
+          "response": ", un petit chat, un petit chat nommé Pipo. Pipo aimait beaucoup jouer dans le jardin. Un jour, il trouva une jolie boîte brillante dans le jardin. Il était très content et décida de",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente et intelligible, sans récit non demandé."
+        }
+      ]
+    },
+    {
+      "id": "greeting-history-recovery",
+      "origin": "authored-development-probe-after-owner-failure",
+      "turns": [
+        {
+          "user": "Salut",
+          "response": "Salut ! Que souhaites-tu faire ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Salutation pertinente, sans récit non demandé."
+        },
+        {
+          "user": "hello",
+          "response": "Je suis disponible pour notre échange. Que souhaites-tu faire ?",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Répond à la salutation en tenant compte de son propre historique."
+        },
+        {
+          "user": "Je ne comprends pas ce que tu racontes.",
+          "response": "Ce terminer, un modèle expérimental.",
+          "automatic_flags": [],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Reformule ou demande une précision, sans amplifier sa réponse hors sujet."
+        },
+        {
+          "user": "Dis-moi juste ton nom.",
+          "response": "Non. Mes connaissances et mes capacités sont limitées.",
+          "automatic_flags": [
+            "required-word-absent:KIRA"
+          ],
+          "discarded_history_pairs": 0,
+          "human_review_criterion": "Se présente brièvement comme KIRA après les tours précédents."
+        }
+      ]
+    }
+  ],
+  "decoding": "greedy",
+  "max_new_tokens": 64,
+  "history": "model-generated-answers-as-in-chat-no-reference-answers",
+  "automatic_flagged_turns": 5,
+  "human_review": "required-unscored",
+  "general_assistant_qualified": false,
+  "scope": "development-regressions-including-observed-failure-not-a-blind-benchmark",
+  "checkpoint_sha256": "0cc9cb5aa2d43f3b85d709ce2585a7474442de5de7e98153eb1e00deb6f4bfca",
+  "suite_sha256": "ab2b9347bab91ccb688ddff272e70942a85f9d78e04155a0068f8f2d7d368c4a",
+  "owner_reproduction": {
+    "matches_all_four_reported_responses": true,
+    "reported_date": "2026-10-22",
+    "diagnosis": "same-model-failure-reproduced-not-a-Windows-PowerShell-error"
+  },
+  "developer_assessment": {
+    "method": "semantic-reading-by-Codex-not-independent-human-rating",
+    "eligible_for_general_dialogue": false,
+    "eligible_as_basic_conversation_fix": false,
+    "observations": [
+      "The bsr/hein/hello/suite session reproduces the owner transcript verbatim.",
+      "Case and punctuation variants are evaluated literally in separate fresh sessions.",
+      "Generated narrative history overrides the next greeting; context overflow is not the cause of the initial failures.",
+      "Structural flags do not detect most irrelevant but fluent story responses."
+    ],
+    "next_weight_candidate": "none-released-as-a-conversation-fix"
+  }
+}
