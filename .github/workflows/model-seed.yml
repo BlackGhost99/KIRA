@@ -29,10 +29,10 @@ jobs:
       - run: >-
           python -m pip install --no-deps --only-binary=:all:
           -r research/kira_model/requirements-bpe.txt
-      - name: Tests du modèle sans Hub ni PyYAML
+      - name: Tests du modèle sans Hub, PyYAML ni PyArrow
         run: >-
           python -c "import sys, unittest;
-          sys.modules.update(huggingface_hub=None, yaml=None);
+          sys.modules.update(huggingface_hub=None, yaml=None, pyarrow=None);
           suite = unittest.defaultTestLoader.discover('research/kira_model/tests');
           result = unittest.TextTestRunner(verbosity=2).run(suite);
           sys.exit(not result.wasSuccessful())"

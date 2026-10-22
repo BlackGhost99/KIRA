@@ -1,0 +1,521 @@
+{
+  "experiment": "kira-language-and-dialogue-0.4",
+  "source_code_parent": "1d3af725616743cfd82e46be3910cc4445dfec58",
+  "language_data": {
+    "dataset": "kira-lecarnet-small-v1",
+    "source_repo": "MaxLSB/LeCarnet",
+    "source_revision": "d0eaae9f8f7f777fde86f16c0b607da1335d2700",
+    "sources": {
+      "README.md": {
+        "bytes": 2724,
+        "sha256": "f3393599d3daeeadae3421055111425d85a6fffdc58af226a28f2520979489e1"
+      },
+      "data/train-00000-of-00004.parquet": {
+        "bytes": 213040725,
+        "sha256": "b3ff2ab7966383ac6f83687ccaeb894033e57048ee6680baf27db234fbd89e6e"
+      },
+      "data/validation-00000-of-00001.parquet": {
+        "bytes": 8738596,
+        "sha256": "ab9a1d62a333905c59ffe74070e7381cac90ad06efbaed5c5a1b017b96c05a4e"
+      }
+    },
+    "sha256": "283e4feb5150329b9149dd1b3185a8e227311e906dea39007c14b1ed92fd7536",
+    "bytes": 6376992,
+    "examples": {
+      "train": 5000,
+      "validation": 64,
+      "test": 0
+    },
+    "selection": "first-train-shard-stride-89; official-validation-stride-251; fixed-count; exact-and-prefix-dedup",
+    "license": "ODC-By-1.0 (publisher declaration)",
+    "license_url": "https://opendatacommons.org/licenses/by/1-0/",
+    "attribution": "LeCarnet — MaxLSB et jddqd; generated with Mistral-Large-Instruct-2411",
+    "changes": "bounded subset; exact-normalized and 160-character-prefix deduplication; original train/validation preserved",
+    "test_source_downloaded": false,
+    "test_source_evaluated": false,
+    "counts": {
+      "validation_scanned": 15814,
+      "train_scanned": 445268,
+      "duplicate_text_or_prefix": 4
+    },
+    "scope": "simple-synthetic-French-stories-not-general-knowledge-or-dialogue-data"
+  },
+  "dialogue_data": {
+    "dataset": "kira-dialogue-fr-v2",
+    "source_revision": "f9ea04583f02a8f86404ff6c58bf75fe637df8a2",
+    "sources": {
+      "README.md": {
+        "bytes": 13659,
+        "sha256": "3ac54f63eec84100c155571945da01c7c18cd8ec97ea94639e2b94a6860e8573"
+      },
+      "data/train-00000-of-00001.parquet": {
+        "bytes": 137195800,
+        "sha256": "51baa85043b569ba117f41516b32d1b0e4e2647fb203a08933f98a556fb1fb06"
+      }
+    },
+    "sha256": "0bb849d84500dde26d7a1a812bc13bfb319019ed3b6be5d81f2fda3d2f3dbb0f",
+    "bytes": 993215,
+    "oasst_corpus_sha256": "b3a0aa21e4556b559255d4c359127265be0ef8045948f3689729ce06b86e9e75",
+    "tokenizer_sha256": "8a9245ab8b5935c0db91c50b57312bfd38529724bed9c7f6c56d04ac77f863d7",
+    "context": 256,
+    "examples": {
+      "train": 902,
+      "validation": 111,
+      "test": 96
+    },
+    "origins": {
+      "aya": 867,
+      "oasst": 95,
+      "authored": 147
+    },
+    "counts": {
+      "aya_rows_read": 202362,
+      "aya_declared_french": 1422,
+      "duplicate_input": 233,
+      "over_context": 311,
+      "invalid_text": 5,
+      "external_identity_mention": 6
+    },
+    "test_source_downloaded": false,
+    "attribution": "Aya Dataset — Cohere For AI community, 2024, Apache-2.0; OASST1 metadata preserved; KIRA-authored examples labeled synthetic",
+    "changes": "French-declared short examples, complete answers, grouped development splits, deduplicated inputs, local interaction examples added",
+    "scope": "human-annotation-is-not-factual-verification; development-data-not-a-blind-general-benchmark"
+  },
+  "language_training": {
+    "format": "kira-language-phase-0.4",
+    "status": "experimental-not-an-assistant",
+    "signature": {
+      "base_sha256": "7410daec3da743cc6d054a54dfb1ff902e0c3c6fcc73884ea3036855010e7bbb",
+      "corpus_sha256": "283e4feb5150329b9149dd1b3185a8e227311e906dea39007c14b1ed92fd7536",
+      "replay_sha256": "2df9b1bb28bd71081a6181d49063e27e9e92edf5710b704e9b84afad810eee35",
+      "replay_ratio": 0.25,
+      "max_replay_regression": 0.35,
+      "config": {
+        "width": 128,
+        "heads": 4,
+        "layers": 4,
+        "context": 256
+      },
+      "tokenizer_sha256": "8a9245ab8b5935c0db91c50b57312bfd38529724bed9c7f6c56d04ac77f863d7",
+      "steps": 10000,
+      "lr": 0.0005,
+      "warmup": 100,
+      "batch_size": 1,
+      "threads": 1,
+      "seed": 42,
+      "eval_every": 500,
+      "code_sha256": "3ac2015a91058918fff36c6637c134cf35b97e429802570c182631b184f96b96",
+      "torch": "2.14.1+cpu",
+      "tokenizers": "0.23.3"
+    },
+    "steps": 10000,
+    "planned_steps": 10000,
+    "best_step": 10000,
+    "parameters": 1088256,
+    "validation_initial": {
+      "loss_per_token": 5.090858589810178,
+      "bits_per_utf8_byte": 2.4958831623802205,
+      "predicted_tokens": 18768,
+      "utf8_bytes": 55228
+    },
+    "best_validation_loss": 2.3296865275652108,
+    "replay_initial": {
+      "loss_per_token": 4.8492896699703385,
+      "bits_per_utf8_byte": 2.5006778777529073,
+      "predicted_tokens": 4957,
+      "utf8_bytes": 13868
+    },
+    "best_replay": {
+      "loss_per_token": 4.632490838754795,
+      "bits_per_utf8_byte": 2.388879227220506,
+      "predicted_tokens": 4957,
+      "utf8_bytes": 13868
+    },
+    "new_tokens_seen": 1848761,
+    "replay_tokens_seen": 657139,
+    "elapsed_seconds": 644.4782199069996,
+    "seconds_per_step": 0.06444782199069995,
+    "test_split_evaluated": false,
+    "tokenization": {
+      "train": {
+        "documents": 5000,
+        "tokens": 1429620
+      },
+      "validation": {
+        "documents": 64,
+        "tokens": 18832
+      }
+    },
+    "history": [
+      {
+        "step": 500,
+        "validation": {
+          "loss_per_token": 3.3685198574114943,
+          "bits_per_utf8_byte": 1.6514762384256787,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.871072522521812,
+          "bits_per_utf8_byte": 2.5119108420006704,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 1000,
+        "validation": {
+          "loss_per_token": 3.1481043554632864,
+          "bits_per_utf8_byte": 1.5434136532379357,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.85789465428072,
+          "bits_per_utf8_byte": 2.5051152892848756,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 1500,
+        "validation": {
+          "loss_per_token": 3.0286457942574834,
+          "bits_per_utf8_byte": 1.4848469878600141,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.882237107902374,
+          "bits_per_utf8_byte": 2.51766818659659,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 2000,
+        "validation": {
+          "loss_per_token": 2.9557572125575526,
+          "bits_per_utf8_byte": 1.449112075843647,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.834144007421343,
+          "bits_per_utf8_byte": 2.4928675744182303,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 2500,
+        "validation": {
+          "loss_per_token": 2.8913938306075124,
+          "bits_per_utf8_byte": 1.4175567932819797,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.80557561108295,
+          "bits_per_utf8_byte": 2.4781354462946625,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 3000,
+        "validation": {
+          "loss_per_token": 2.833434578352064,
+          "bits_per_utf8_byte": 1.389141248191399,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.7554821193711225,
+          "bits_per_utf8_byte": 2.4523032739418955,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 3500,
+        "validation": {
+          "loss_per_token": 2.7751002229896247,
+          "bits_per_utf8_byte": 1.360541802190514,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.771517507535016,
+          "bits_per_utf8_byte": 2.460572390280923,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 4000,
+        "validation": {
+          "loss_per_token": 2.717870253278776,
+          "bits_per_utf8_byte": 1.3324838007227966,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.779415296070129,
+          "bits_per_utf8_byte": 2.4646451156524822,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 4500,
+        "validation": {
+          "loss_per_token": 2.64278641035693,
+          "bits_per_utf8_byte": 1.2956726231955837,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.768922125112392,
+          "bits_per_utf8_byte": 2.4592340055173247,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 5000,
+        "validation": {
+          "loss_per_token": 2.5899900310281394,
+          "bits_per_utf8_byte": 1.2697882675654504,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.72517466126658,
+          "bits_per_utf8_byte": 2.4366743478164294,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 5500,
+        "validation": {
+          "loss_per_token": 2.5562628571639587,
+          "bits_per_utf8_byte": 1.2532529260553225,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.708036169160247,
+          "bits_per_utf8_byte": 2.4278363837051598,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 6000,
+        "validation": {
+          "loss_per_token": 2.4991141767554677,
+          "bits_per_utf8_byte": 1.2252347781010067,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.699552359397262,
+          "bits_per_utf8_byte": 2.4234614593683563,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 6500,
+        "validation": {
+          "loss_per_token": 2.4563677992865456,
+          "bits_per_utf8_byte": 1.2042776130383233,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.675362923079401,
+          "bits_per_utf8_byte": 2.410987469899347,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 7000,
+        "validation": {
+          "loss_per_token": 2.4289778247412106,
+          "bits_per_utf8_byte": 1.1908491952027627,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.670591427093315,
+          "bits_per_utf8_byte": 2.40852690860723,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 7500,
+        "validation": {
+          "loss_per_token": 2.408261210564762,
+          "bits_per_utf8_byte": 1.180692509922205,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.662214936761815,
+          "bits_per_utf8_byte": 2.404207326670331,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 8000,
+        "validation": {
+          "loss_per_token": 2.3874538606390012,
+          "bits_per_utf8_byte": 1.1704913398411094,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.647922331944862,
+          "bits_per_utf8_byte": 2.396836927475053,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 8500,
+        "validation": {
+          "loss_per_token": 2.3665223497665546,
+          "bits_per_utf8_byte": 1.1602292976672635,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.643437840944821,
+          "bits_per_utf8_byte": 2.394524368688097,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 9000,
+        "validation": {
+          "loss_per_token": 2.3508805237259502,
+          "bits_per_utf8_byte": 1.1525606167257485,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.639237458315833,
+          "bits_per_utf8_byte": 2.3923583186821644,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 9500,
+        "validation": {
+          "loss_per_token": 2.34059553926863,
+          "bits_per_utf8_byte": 1.1475182217977598,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.637790363643447,
+          "bits_per_utf8_byte": 2.3916120820412274,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      },
+      {
+        "step": 10000,
+        "validation": {
+          "loss_per_token": 2.3296865275652108,
+          "bits_per_utf8_byte": 1.1421698865123775,
+          "predicted_tokens": 18768,
+          "utf8_bytes": 55228
+        },
+        "replay_validation": {
+          "loss_per_token": 4.632490838754795,
+          "bits_per_utf8_byte": 2.388879227220506,
+          "predicted_tokens": 4957,
+          "utf8_bytes": 13868
+        },
+        "selected": true
+      }
+    ]
+  },
+  "language_generations": {
+    "temperature": 0.5,
+    "top_k": 40,
+    "seed": 42,
+    "max_new_tokens": 100,
+    "cases": [
+      {
+        "model": "base-previous",
+        "prompt": "Il était une fois",
+        "response": ", qui ne la nuit, et il était assisait que le ciel, et les chant, et il ne pouvait être autreveil eût été s'était Passepartout, il n'était pas qu'il avait-il se trouvé à Hong-Kong.\n\n\n\n\n«Je n'il.\n\n\n\n\n\n«Grès, tout ce moment, et que Phileas Fogg, après, qui, il n'il n'était pas d'"
+      },
+      {
+        "model": "base-previous",
+        "prompt": "Dans un village",
+        "response": ", qui ne la force qu’il avait de l’il n’il y avait été fait s’était point de son désord, et de l’il faut faire rassa dans son médit, dit Candide.\n\n\n\n\n\nCandide et Martin, dit le gouverneur de son vaisseau. Candide, dit un exécout à Venise, tout est-vous à Venise, et le baron, et il y a été violé à la vieille; je"
+      },
+      {
+        "model": "base-previous",
+        "prompt": "Une chercheuse",
+        "response": ", qui ne la nuit était assisera sur les rangée de l'ailleurs, et il s'était pas.\n\n\n\n\nLe temps de la ville.\nD'est une grande sur le lendemain, dans le baissement de la station de la gare. D'était un peu de la gare.\n\n\n\nCe petits, qui devait l'était un homme le premier consul, dont il lui, et la vie, et le temps,"
+      },
+      {
+        "model": "base-previous",
+        "prompt": "Le chat",
+        "response": ", qui ne pouvait être plus s'était pas de l'est dans la mer, qui lui, et il ne pouvait être autre, de son maître, et il eût pu sait plus que le train.\n\n\nEt, sifflet de la gare. Il était alors.\n«Je suis n'était pas d'avait pu l'ensi, qui se dit l'est que, et, après, qui ne peut être autrement que le tour du monde,"
+      },
+      {
+        "model": "language-0.4",
+        "prompt": "Il était une fois",
+        "response": ", dans un petit village, un petit garçon nommé Léo. Léo aimait beaucoup jouer avec ses amis dans le parc. Un jour, il trouva un petit chaton rouge dans le ballon. Le chausson était très excité et décida de le ramener chez lui pour le jardin.\n\nLe jour, Léo vit un grand joli bleu caillou brillant"
+      },
+      {
+        "model": "language-0.4",
+        "prompt": "Dans un village",
+        "response": ", il y avait une petite fille nommée Lila. Lila adorait jouer avec ses amis, mais un jour, il remarqua une belle maison brillée. Il avait un écureuil qui n'était pas abandonnant.\n\nLili décida de demander de l'aider à Lilialheureusement, mais le chant. Il était très s'approchant et ne savait pas"
+      },
+      {
+        "model": "language-0.4",
+        "prompt": "Une chercheuse",
+        "response": ", il y avait une grande ville. Les enfants étaient trés. Le chant, car il s'approcha de la frimpline, mais il s'approcha et ne pouvait pas. Léo était très s'approcha et il ne voulait pas comment faire.\n\nLéo voulait aussi expliquer son ami le chat, qui avait un petit chant qui avait un peu effrayé. Léo était"
+      },
+      {
+        "model": "language-0.4",
+        "prompt": "Le chat",
+        "response": ", qui était très excité.\n\nLéo décida de s'éter. Il s'approcha de l'ouvrir, mais il avait un vieux hibou. Il avait un petit chateur et lui dit : \"Ne t'inquiète pas, je ne manger.\" Léo, tout le chantça te montrer le chaud.\"\n\nLéo comprit alors que"
+      }
+    ]
+  },
+  "scope": "own-weights-continued-pretraining-small-synthetic-domain-not-general-assistant-validation"
+}

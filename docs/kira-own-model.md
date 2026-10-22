@@ -5,6 +5,11 @@ les propres poids de KIRA et améliorer l'assistante autour de ce modèle. Le co
 en arrière-plan reste prioritaire ; le moteur de calcul peut être dans le cloud et
 l'interface graphique reste secondaire.
 
+L'expérience [KIRA 0.4](kira-language-0.4.md) poursuit maintenant ces poids sur un
+échantillon de français simple, puis un corpus de dialogue plus varié. Les mesures
+et les sorties sont conservées séparément des tests techniques ; le pilote 0.3
+reste non qualifié pour converser.
+
 ## Ce que signifie « son propre modèle »
 
 L'objectif retenu est un modèle initialisé de zéro et entraîné sur un corpus choisi,
