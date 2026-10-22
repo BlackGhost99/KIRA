@@ -1,198 +1,242 @@
 # KIRA
 
-**Nouvelle direction — 20 octobre 2026 :** développer le propre modèle de KIRA,
-initialisé de zéro, avec un core installé en arrière-plan et un moteur cloud.
-La première chaîne expérimentale est dans `research/kira_model` ; elle ne remplace
-pas encore les fournisseurs du serveur. Voir [le plan et les commandes](docs/kira-own-model.md).
+**Une IA personnelle avec son propre modèle, un cœur installé en arrière-plan et un moteur cloud.**
 
-Ton partenaire de recherche et d'apprentissage : une IA personnelle qui te connaît, t'explique la physique, les maths,
-l'informatique, les langues ou le droit au niveau où tu en es, calcule et trace pour de vrai, surveille Internet pour toi
-et te propose elle-même des améliorations. Tu la gardes sous contrôle : **rien ne s'applique sans ton accord.**
+## Le but : une IA « mix ChatGPT–Claude »
 
-KIRA tourne dans le cloud (ton PC n'a rien à calculer) et s'utilise depuis le téléphone comme une application installée.
+L'ambition de KIRA est de réunir les qualités que nous recherchons chez ChatGPT et
+Claude : dialogue naturel, raisonnement rigoureux, programmation, analyse de documents,
+explications claires et collaboration sur des projets qui durent.
 
-## Ce qu'elle sait faire
+Nous voulons aller vers une assistante qui connaît le contexte de son propriétaire,
+retrouve ses informations, utilise des outils vérifiables et peut agir sur ses appareils
+avec les autorisations prévues. Elle doit aussi reconnaître une information manquante,
+rester cohérente au fil d'un échange et permettre de corriger sa mémoire.
 
-| | |
+Cette ambition guide le développement d'un **modèle KIRA indépendant, initialisé de zéro**.
+Les expériences actuelles utilisent nos propres poids et un tokenizer appris pour KIRA,
+avec des méthodes publiques, PyTorch et des corpus dont la provenance est documentée.
+L'expression « mix ChatGPT–Claude » décrit l'objectif de qualité et de comportement ;
+elle ne signifie pas que leurs poids ont été récupérés ou fusionnés.
+
+**Ce niveau reste un objectif : le modèle maison actuel ne sait pas encore tenir une
+conversation fiable.** Le dépôt conserve ses progrès, ses échecs et les mesures qui
+permettent de décider de la suite.
+
+## Priorités du projet
+
+1. **Le core installé**, discret au quotidien : le mode « astral » de KIRA, avec un état
+   consultable, un journal et une possibilité de pause.
+2. **Le moteur cloud**, pour le calcul, la mémoire et l'orchestration des outils.
+3. **Le propre modèle de KIRA**, développé et évalué progressivement avant son intégration.
+4. **L'interface graphique**, utile pour discuter et contrôler l'assistante, mais secondaire.
+
+Le projet vise une assistante installée et persistante. L'interface web existante sert
+aujourd'hui de panneau de contrôle ; créer un site public n'est pas le but du projet.
+
+## Où nous en sommes — 23 octobre 2026
+
+Le dépôt rassemble deux chantiers : le système d'assistance et le laboratoire du modèle.
+Le système contient déjà du code pour la mémoire, les projets, les outils et les machines.
+Le laboratoire cherche encore à obtenir un dialogue pertinent et stable avec nos propres poids.
+
+| Élément | Présent dans le code | État et limites |
+|---|---|---|
+| **KIRA Core** | Appairage, dossiers autorisés, actions sous permissions, corbeille, pause et démarrage automatique | Contrats de fichiers/périmètre testés sur Linux, Windows et macOS ; installation automatique, écran et contrôle matériel restent à essayer sur les appareils réels. |
+| **Moteur serveur** | Conversation, outils, tâches de fond persistantes, reprise des travaux compatibles et journaux | Le dialogue du serveur utilise encore les fournisseurs configurés ; le modèle maison n'y est pas intégré. |
+| **Mémoire V3** | Souvenirs versionnés, provenance, correction, archives, identité persistante et recherche hybride préparée | La recherche sémantique exige un service d'embeddings et PostgreSQL/pgvector configurés ; les tests simulés ne valident pas sa pertinence réelle. |
+| **Sessions et routeur** | Cookies HttpOnly révocables, modes QUALITY/ECONOMY/PRIVATE, bascule entre fournisseurs compatibles | Les appels réels dépendent des clés, modèles, permissions et quotas du compte configuré. |
+| **Continuité V4** | Projets, tâches, documents/OCR, cartes d'apprentissage, sauvegarde et restauration | Code et contrats testés ; les parcours réels dans l'environnement du propriétaire restent à valider. |
+| **Interface** | Panneau web installable, projets, mémoire, accords et dictée manuelle | Les tests DOM ne remplacent pas un essai visuel, vocal ou mobile réel. |
+| **Modèle KIRA Seed 0.4** | Préparation des corpus, entraînement CPU, sauvegarde/reprise et dialogue local | Prototype de recherche : réponses hors sujet, répétitions et mauvaise gestion du contexte. Non qualifié pour servir d'assistante. |
+
+Les fournisseurs externes du serveur et les poids du laboratoire sont des mécanismes
+distincts. Un appel à Groq, OpenAI ou Anthropic reste un appel à ce fournisseur.
+La mémoire enregistrée en base n'est pas un réentraînement du modèle KIRA.
+
+La publication du code ne certifie pas l'état du service hébergé. La configuration réelle,
+la connexion à la base, les fournisseurs et les appareils doivent être vérifiés sur
+l'installation utilisée. Le laboratoire fonctionne sans clé d'API et sans carte graphique dédiée.
+
+## Le laboratoire : ce qui a été fait
+
+Le dossier [research/kira_model](research/kira_model) contient un petit Transformer causal
+créé pour apprendre depuis zéro sur CPU. La chaîne a progressé du codage par octets à un
+vocabulaire BPE, puis à une phase de français simple et à une adaptation au dialogue.
+
+Le pilote 0.4 utilise **1 088 512 paramètres avec les rôles de dialogue**, un contexte de
+256 tokens et des poids issus de notre propre chaîne. La phase linguistique supplémentaire
+compte 10 000 étapes, suivies de 4 000 étapes d'adaptation au dialogue. Ces nombres décrivent
+des phases séparées de l'expérience, pas un score d'intelligence.
+
+Les données comprennent des textes littéraires français, un échantillon d'histoires
+LeCarnet et des conversations françaises issues d'Aya, d'OpenAssistant et d'exemples
+originaux KIRA. Les attributions, licences, origines synthétiques, empreintes et séparations
+train/validation/test sont consignées dans les préparateurs et les rapports.
+Les poids préentraînés des modèles de ces auteurs ne sont pas utilisés.
+
+### Résultat actuel : progrès mesurables, dialogue insuffisant
+
+Sur quelques formulations, le pilote répond correctement :
+
+| Message | Réponse observée dans la session initiale |
 |---|---|
-| **Discuter** | Conversation avec mémoire. Réponses en Markdown avec formules (LaTeX), tableaux, graphiques. Bouton « Réflexion approfondie » pour les raisonnements difficiles. 👍 / 👎 pour la corriger. |
-| **Calculer** | Vrai Python isolé (numpy, scipy, sympy, matplotlib) au lieu de calculer de tête ; graphiques insérés dans la réponse. |
-| **Chercher** | Recherche web et lecture de pages, avec les adresses citées. |
-| **Se souvenir** | Ce qu'elle sait de toi (niveau, lacunes, objectifs) est lisible, corrigeable et effaçable dans l'onglet *Mémoire*. |
-| **Apprendre seule** | Chaque jour, elle lit des sources (arXiv, Quanta, Phys.org…), résume, et te soumet les nouveautés. Tu gardes ou tu écartes : ce que tu gardes entre dans sa mémoire. |
-| **S'améliorer** | Elle relit son propre code, ce que tu lui as dit et tes 👎, puis prépare une modification vérifiée par ses tests. Si tu acceptes, elle ouvre une *pull request* sur GitHub : **elle ne fusionne jamais**. |
-| **Agir sur tes machines** | Son « cœur » : un petit programme sur ton PC, ton Linux/Mac ou ton téléphone Android lui permet de lire et écrire des fichiers, lancer des commandes, voir l'écran, piloter souris et clavier et surveiller l'état de la machine. **Tu règles chaque pouvoir, machine par machine : libre, sur accord, interdit.** |
-| **Ne jamais te lâcher** | Si un fournisseur d'IA tombe en panne (Anthropic, OpenAI, DeepSeek, Groq, ou un modèle local), elle bascule automatiquement sur le suivant. |
+| `bjr` | Bonjour ! Que souhaites-tu faire ? |
+| `Comment t'appelles tu ?` | Je m'appelle KIRA. |
 
-## Mise en ligne, pas à pas (depuis un téléphone, ~20 minutes)
+Mais une variante courante comme **`bsr` déclenche une histoire de Lulu**, puis le modèle
+continue ce récit malgré les messages suivants. Cet échec a été reproduit mot pour mot
+avec le fichier distribué. La casse, la formulation et son propre historique peuvent
+faire dérailler ses réponses. Les demandes de projet et le rappel du contexte échouent aussi.
 
-### 1. La mémoire durable : Supabase
-Un hébergement gratuit efface ses fichiers à chaque redémarrage. Pour que KIRA n'oublie rien :
-1. Crée un projet sur [supabase.com](https://supabase.com) (région la plus proche).
-2. *Connect* → *Session pooler* → copie l'adresse `postgresql://…`. Remplace `[YOUR-PASSWORD]` par le mot de passe du projet.
-   Prends bien le **Session pooler** (et non « Direct connection ») : Render gratuit ne parle qu'en IPv4.
-3. Garde cette adresse pour l'étape 2 (variable `DATABASE_URL`).
+Deux prolongations de 2 000 étapes ont été comparées, avec et sans répétition des histoires.
+Elles améliorent certaines mesures, mais restent incohérentes et dégradent d'autres réponses.
+**Aucun de ces essais supplémentaires n'est proposé comme modèle corrigé.**
 
-### 2. Le serveur : Render
-1. [render.com](https://render.com) → *New +* → *Blueprint* → choisis le dépôt `BlackGhost99/KIRA`. Render lit `render.yaml`.
-2. Renseigne les variables demandées (*Environment*) :
-   - `OWNER_PASSWORD` : ton mot de passe de connexion à KIRA (long, unique).
-   - `DATABASE_URL` : l'adresse Supabase de l'étape 1.
-   - `ANTHROPIC_API_KEY` : clé sur [console.anthropic.com](https://console.anthropic.com). **Fixe-y une limite de dépense mensuelle.**
-   - Facultatif : `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY` (secours), `TAVILY_API_KEY` (meilleure recherche web).
-   - `SECRET_KEY` et `CRON_TOKEN` sont générés automatiquement.
-3. Au premier déploiement, ouvre l'adresse `https://….onrender.com`, connecte-toi, et regarde *Plus → Réglages* : les fournisseurs
-   configurés ont un voyant vert.
+Les anciens petits exercices fermés sont passés de 8/30 pour le pilote 0.3 à 0/30 pour
+le pilote 0.4. L'outil explicite `/calc` continue de calculer exactement : c'est un outil
+arithmétique du terminal, distinct des capacités apprises par le modèle.
 
-> **Ne colle jamais une clé d'API dans une conversation, un message ou un fichier du dépôt.** Elles se saisissent uniquement
-> dans Render (*Environment*). Si une clé fuit, révoque-la chez le fournisseur et recrée-en une.
+La vérification comprend désormais **30 tours de conversation de développement**, avec
+variantes de salutations, suivi du contexte et reprise après une mauvaise réponse.
+Les vraies sorties du modèle alimentent les tours suivants. Ces sondes connues et leur
+relecture par Codex ne constituent pas une évaluation humaine indépendante.
 
-Offre gratuite : le service s'endort après 15 minutes sans visite et met jusqu'à une minute à se réveiller (l'écran
-l'indique). Il dispose d'environ 512 Mo de mémoire. Le palier payant le plus bas supprime l'endormissement.
+Rapports et détails :
 
-### 3. L'évolution et la veille automatique : GitHub
-1. **Jeton pour l'évolution** : GitHub → *Settings* → *Developer settings* → *Fine-grained tokens* → limité au seul dépôt
-   `KIRA`, droits *Contents: Read and write* et *Pull requests: Read and write*. Colle-le dans Render sous `GITHUB_TOKEN`.
-2. **Veille chaque matin** : dépôt → *Settings* → *Secrets and variables* → *Actions* → ajoute
-   `KIRA_URL` (l'adresse Render, sans `/` final) et `CRON_TOKEN` (valeur visible dans Render → *Environment*).
-   Le fichier `.github/workflows/veille.yml` réveille alors KIRA à 06 h (Libreville). Tu peux aussi le lancer à la main
-   (*Actions* → *Veille quotidienne* → *Run workflow*).
+- [Direction générale et laboratoire depuis zéro](docs/kira-own-model.md)
+- [Expérience BPE sur CPU](docs/kira-seed-bpe.md)
+- [Apprentissage du dialogue](docs/kira-seed-dialogue.md)
+- [Expérience 0.4 et limites constatées](docs/kira-language-0.4.md)
+- [Reproduction du dialogue « bsr »](research/kira_model/results/dialogue-v04-owner-bsr-failure.json)
+- [Comparaison des deux prolongations](research/kira_model/results/dialogue-v04-replay-study.json)
 
-### 4. L'installer sur le téléphone
-Ouvre l'adresse dans Chrome → menu ⋮ → *Installer l'application* (ou *Ajouter à l'écran d'accueil*).
+Les corpus téléchargés, les dossiers de runs et les checkpoints d'entraînement restent
+hors de Git. Le dépôt contient le code, les petites données de test et les rapports.
+Publier cette version ne remplace pas automatiquement les poids présents sur un PC.
 
-## Le cœur : KIRA sur tes machines
+## Comment les éléments travaillent ensemble
 
-Le cœur (`core/kira_core.py`) est un seul fichier Python, sans aucune dépendance. Une fois installé, il tourne discrètement
-sur la machine (démarrage automatique) : **on ne le voit pas, mais il est là**. C'est lui qui exécute ce que KIRA te
-propose et que tu as autorisé. Il appelle le serveur (jamais l'inverse : aucun port ouvert chez toi).
-
-### Relier une machine (2 minutes)
-1. Dans l'application : *Plus → Mes machines → Ajouter une machine*. Un code à usage unique apparaît (valable 10 minutes),
-   avec les commandes à coller sur la machine, adaptées à Windows, Linux/Mac ou Android (Termux).
-2. Colle-les sur la machine. La dernière (`install`) lance le démarrage automatique.
-3. La machine apparaît dans l'application. Au début, **tout ce qui modifie quelque chose demande ton accord.**
-
-Python 3 est nécessaire sur la machine (python.org sous Windows, `pkg install python` sous Termux). Facultatif : `pip install
-mss pillow` (capture d'écran fiable), `pip install pyautogui` (souris et clavier ; ou `xdotool` sous Linux), `psutil`.
-
-### Tes trois niveaux, par machine et par pouvoir
-| Pouvoir | Par défaut |
+| Élément | Rôle |
 |---|---|
-| État de la machine · Lire des fichiers | **Libre** |
-| Écrire · Supprimer · Lancer des commandes · Voir l'écran · Souris et clavier | **Je valide** |
+| Modèle | Produire et interpréter du langage ; modèle KIRA encore expérimental, fournisseurs configurés utilisés par le serveur actuel. |
+| Service cloud | Orchestrer la conversation, les projets, la mémoire, les tâches et les outils. |
+| Mémoire | Conserver les informations avec leur origine, leurs corrections et leur statut. |
+| Core installé | Appliquer les actions autorisées dans le périmètre de la machine. |
+| Interface | Permettre au propriétaire de discuter, vérifier, approuver, corriger et arrêter. |
 
-*Libre* : KIRA le fait seule. *Je valide* : une carte s'affiche dans l'application avec **la commande ou le contenu exact**
-(calculé par le serveur d'après les vrais arguments, jamais d'après ce que dit l'IA) et deux boutons. *Interdit* : jamais.
-Ce que tu approuves est montré **en entier** : une écriture dépasse rarement 20 000 caractères et un script Python 6 000, sinon
-KIRA doit découper (écritures « ajouter » successives, chacune visible), pour qu'aucune suite cachée ne suive un début anodin.
-Supprimer ne peut jamais être « Libre » ; un fichier supprimé va dans une corbeille récupérable 30 jours
-(`python kira_core.py trash list`). Un fichier remplacé est d'abord copié dans cette corbeille.
+Le core initie les échanges avec le serveur. Ses pouvoirs et dossiers sont plafonnés
+sur la machine. Les permissions peuvent exiger un accord ou interdire une action ;
+la pause locale reste disponible. Le terminal expérimental du modèle ne dispose pas
+de ces pouvoirs et ne contrôle pas l'ordinateur.
 
-### Ce que la machine décide elle-même (le serveur ne peut pas l'élargir)
-- **Quels pouvoirs sont actifs.** Par défaut : état, lecture, écriture et suppression, limités aux dossiers autorisés.
-  Commandes, écran et souris/clavier restent **coupés** tant que tu ne les actives pas sur la machine
-  (`python kira_core.py allow exec`, ou `--full` à l'appairage).
-- **Pas de programme sans « commandes ».** Tant que « Lancer des commandes » est coupé sur la machine, elle refuse aussi
-  d'*écrire* ou de *déplacer vers* un programme ou un fichier qui se lance tout seul (`.sh`, `.bat`, `.exe`, `.ps1`, `.desktop`,
-  `.bashrc`, hooks `.git/hooks`, dossiers de démarrage…) : sinon déposer un script contournerait le plafond. Un fichier `.py`,
-  `.md` ou `.txt` reste écrivable ; si tu le lances toi-même ensuite, c'est ta décision.
-- **Les dossiers autorisés** (par défaut `~/KIRA`) : `python kira_core.py roots add DOSSIER`. Hors de ces dossiers, rien,
-  liens symboliques compris. Les clés SSH, `.env`, mots de passe, jetons et le dossier du cœur sont **toujours interdits**,
-  même dans un dossier autorisé.
-- **La pause** : `python kira_core.py pause` (ou la souris dans un coin de l'écran quand elle est pilotée) coupe tout, tout de
-  suite, sans passer par le serveur.
-Dans l'application, *Tout mettre en pause* coupe toutes les machines d'un geste, et *Retirer* révoque une machine
-immédiatement (son jeton ne vaut plus rien). Chaque demande, accord, refus et résultat est dans le journal.
+## Essayer et développer
 
-### Protection contre les pièges
-- Ce qui vient d'une machine (fichier, sortie, capture) est traité comme **une donnée**, jamais comme un ordre.
-- Après avoir **lu une machine**, KIRA n'a plus le droit de chercher sur le web pendant ce tour : tes données ne partent pas.
-- Après avoir **lu Internet** (ou une connaissance issue de la veille), un pouvoir « Libre » repasse en « Je valide » pour
-  ce tour : une page piégée ne peut pas la pousser à agir seule (seul « État de la machine » reste libre).
-- Les contenus renvoyés par les machines (texte lu, sorties, captures) sont effacés du serveur après 7 jours ; le journal
-  (qui a demandé quoi) reste 90 jours.
+### Laboratoire du modèle sur Windows / PowerShell
 
-### Limites à connaître
-- Le cœur **ne se met pas à jour tout seul** (volontairement : un serveur compromis ne doit pas pouvoir changer le programme
-  qui tourne chez toi). Pour mettre à jour : retélécharge `kira_core.py` et relance `install`.
-- Si quelqu'un prenait le contrôle du *serveur*, il ne pourrait agir que **dans les plafonds fixés sur chaque machine** :
-  c'est pourquoi les pouvoirs sensibles sont coupés par défaut côté machine. Active-les seulement sur les machines de confiance.
-- Capture d'écran et souris/clavier : un seul écran (le principal). **Android** : fichiers, commandes et état via Termux ;
-  voir l'écran et toucher le téléphone demanderait une vraie application Android (non incluse).
-- Tant qu'une machine est reliée, le serveur reste éveillé (elle l'interroge toutes les 20 secondes) : sur l'offre gratuite de
-  Render, cela consomme les 750 h mensuelles d'un seul service, ce qui suffit.
+Depuis la racine du dépôt, créer un environnement séparé du serveur :
 
-## Comment elle évolue (et pourquoi tu restes aux commandes)
+```powershell
+python -m venv .venv-model
+$kiraModelPython = (Resolve-Path ".venv-model\Scripts\python.exe").Path
 
-1. Tu lances *Plus → Comment je peux m'améliorer* (avec une piste si tu en as une).
-2. KIRA lit son code, ses statistiques d'usage et tes 👎, puis propose une modification **et lance toute la suite de tests
-   dessus**. Tu vois l'idée en français ; le détail technique est derrière « Détails techniques ».
-3. Si tu acceptes, elle ouvre une *pull request* sur GitHub. Les tests tournent encore là-bas.
-4. **C'est toi qui fusionnes** (ou pas). Render redéploie alors la nouvelle version.
+& $kiraModelPython -m pip install --index-url https://download.pytorch.org/whl/cpu -r research/kira_model/requirements.txt
+& $kiraModelPython -m pip install --no-deps --only-binary=:all: -r research/kira_model/requirements-bpe.txt
+& $kiraModelPython -m unittest discover -s research/kira_model/tests -v
+```
 
-Elle ne peut jamais toucher aux fichiers qui font ses garde-fous : `app/principles.py`, `auth.py`, `evolution.py`, `net.py`,
-`sandbox.py`, `budget.py`, `devices.py`, `tools/device_tools.py`, `main.py`, aux tests du cœur, à `core/` (le programme des
-machines), ni aux bibliothèques embarquées.
+Le paquet Tokenizers est installé sans les dépendances Hub ; le laboratoire n'utilise
+ni leurs API ni PyYAML pour entraîner ou converser. Les versions épinglées sont dans
+les deux fichiers de dépendances. Sous Linux/macOS, utiliser le Python de
+`.venv-model/bin/python` après création de l'environnement.
 
-## Travailler en local
+Pour charger des poids de dialogue déjà obtenus, remplacer le chemin ci-dessous par
+celui de son propre checkpoint KIRA compatible :
+
+```powershell
+$kiraCheckpoint = "C:\chemin\vers\vos-poids-kira.pt"
+& $kiraModelPython -m research.kira_model.dialogue chat --checkpoint $kiraCheckpoint
+```
+
+Commandes du terminal : `/reset` pour vider l'historique, `/quit` pour sortir,
+`/calc expression` pour le calcul exact. Vider l'historique ne corrige pas les poids.
+Les guides du laboratoire expliquent la préparation, l'entraînement et la reprise
+sans écraser un run existant. Les temps publiés dépendent de la machine qui les mesure.
+
+### Système serveur et interface
+
+Les dépendances du serveur sont dans [requirements.txt](requirements.txt) et ses
+réglages dans [.env.example](.env.example). Utiliser un autre environnement virtuel
+que celui du modèle, installer ces dépendances puis copier `.env.example` vers `.env`
+pour le développement local. L'application lit ce fichier ; les variables déjà définies
+dans l'environnement gardent la priorité.
+
+Après configuration de l'accès et d'un fournisseur, lancer depuis cet environnement :
 
 ```bash
-pip install -r requirements.txt
-cp .env.example .env          # puis remplis OWNER_PASSWORD, SECRET_KEY, une clé d'API…
-uvicorn app.main:app --reload # http://127.0.0.1:8000
-
-python scripts/dev_demo.py    # version de démonstration SANS clé d'API (mot de passe : demo)
-python -m unittest discover -s tests -t .   # suite de tests
+python -m uvicorn app.main:app --reload
 ```
 
-## Carte du projet
+Pour un développement en HTTP local, définir explicitement `COOKIE_SECURE=false` ;
+conserver les cookies sécurisés pour l'installation HTTPS. La configuration des sessions,
+des modes et des fournisseurs est détaillée dans le [guide du routeur](docs/router-auth-v3.md).
+Les secrets restent dans l'environnement de l'installation, hors du dépôt.
 
-```
-app/            le cerveau (Python, Starlette)
-  agent.py        un tour de conversation : mémoire + outils + bascule de fournisseur
-  llm/            Anthropic, OpenAI, DeepSeek, Groq, Ollama et le routeur (priorité, pause, budget)
-  tools/          calcul Python, recherche web, lecture de pages, mémoire
-  veille.py       lecture des sources, résumés, validation
-  evolution.py    propositions de modification + pull requests   (protégé)
-  sandbox.py      exécution isolée du code de calcul               (protégé)
-  devices.py      machines, niveaux, accords, file d'actions       (protégé)
-  principles.py   principes fondateurs et périmètre de l'évolution (protégé)
-core/           kira_core.py : le cœur installé sur tes machines (un fichier, sans dépendance)
-web/            l'application mobile (HTML/CSS/JS sans CDN, installable)
-tests/          plus de 300 tests automatiques (dont un vrai aller-retour serveur ↔ machine)
-legacy/         l'ancien KIRA v1, conservé pour mémoire
+Une démonstration locale permet d'examiner l'interface sans clé d'API :
+
+```bash
+python scripts/dev_demo.py
 ```
 
-## Sécurité en bref
+Elle utilise **des réponses simulées**, une base temporaire et une machine de démonstration
+isolée. L'adresse affichée est `http://127.0.0.1:8765`, avec le mot de passe `demo`.
+Cette démonstration ne mesure pas les capacités du modèle KIRA.
 
-- Un seul propriétaire : mot de passe → jeton signé, délai d'attente après les mauvais essais, journal de toutes les actions.
-- Le code de calcul tourne dans un processus séparé, sans accès aux clés du serveur, avec limites de temps et de mémoire.
-- Le contenu venu d'Internet est traité comme un document, jamais comme un ordre.
-- Machines : jeton propre à chaque machine (stocké haché), appairage par code à usage unique, plafonds fixés sur la machine,
-  fichiers sensibles toujours interdits, accord affiché avec la commande exacte, pause et révocation immédiates (voir
-  « Le cœur »).
-- Les graphiques et captures d'écran ne sont jamais publics ni mis en cache : ils ne se chargent qu'avec ta session.
-- Plafond quotidien de jetons (`DAILY_TOKEN_BUDGET`) pour que la facture reste maîtrisée.
-- *Plus → Réglages → Exporter mes données* : tout ce que KIRA sait, en un fichier.
+Pour relier un appareil au système serveur : **Mes machines → Ajouter une machine**,
+puis suivre les commandes d'appairage générées. L'installation discrète et les capacités
+matérielles doivent être validées sur l'appareil concerné.
 
-## Limites actuelles
+## Validation
 
-- Les modèles d'IA (Anthropic, OpenAI, DeepSeek…) gardent leurs propres garde-fous : KIRA ne les contourne pas.
-- Les adresses des sources de veille par défaut sont des flux publics usuels ; certaines peuvent changer. *Veille → Sources*
-  permet d'en ajouter, de couper ou de corriger.
-- Le cœur n'a été testé ici que sous Linux (y compris un vrai aller-retour avec le serveur). Les démarrages automatiques
-  Windows (Planificateur de tâches), macOS (launchd) et Android (Termux:Boot), la capture d'écran et le pilotage souris/clavier
-  sous Windows/Mac demandent un premier essai chez toi : dis-moi ce qui coince.
-- Les modèles DeepSeek, Groq et Ollama ne savent pas lire les images : si KIRA passe sur l'un d'eux, elle peut agir sur ta
-  machine mais ne verra pas une capture d'écran (elle te le dira).
-- Un modèle local de secours (Ollama) n'est utile que si tu l'héberges toi-même ailleurs (`OLLAMA_URL`).
-# Évolution en préparation : mémoire V3
+La CI sépare les contrôles du système et ceux du modèle :
 
-Le premier lot V3 ajoute une mémoire hybride cloud, un historique non destructif,
-des archives et une identité persistante commune aux appareils. Son activation,
-ses tests et ses limites sont décrits dans [docs/memory-v3.md](docs/memory-v3.md).
+- **Système** : tests Python, base PostgreSQL/pgvector jetable, sessions, continuité,
+  OCR, parcours DOM et contrats du core sur Linux, Windows et macOS.
+- **Modèle** : 78 tests techniques, exécutés sur Linux/Python 3.12 et Windows/Python 3.15,
+  plus des expériences CPU et les générations conservées pour relecture.
+- **Qualité du dialogue** : conversations avec les sorties réelles, variantes et
+  régressions documentées ; les pertes et le nombre de tests techniques ne la certifient pas.
 
-Le [routeur et les sessions V3](docs/router-auth-v3.md) ajoutent les secours gratuits, les modes de routage et les cookies HttpOnly révocables. Les comptes gratuits Gemini/Groq doivent être déclarés explicitement ; la mise à jour impose une nouvelle connexion navigateur.
+Les workflows système et modèle du commit `9f96f641f44a30e92521135fbd9835b1f5902cb2`
+ont réussi. Les tests utilisant des services simulés ne valident pas les clés, les quotas,
+les réponses des fournisseurs réels ou l'installation matérielle.
 
-La [continuité V4](docs/continuity-v4.md) ajoute projets, tâches persistantes, mémoire vérifiable, documents/OCR, révisions, accords exacts, évaluations, voix sur demande et sauvegarde restaurable. Les limites et étapes d’essai terrain y sont précisées.
+## Prochaines étapes
+
+1. Revoir les données et l'apprentissage conversationnels pour améliorer la pertinence,
+   les variantes de formulation, les tours suivants et la reconnaissance de l'incertitude.
+2. Comparer des évolutions du modèle sous contraintes CPU/RAM, en conservant les échecs
+   et les régressions, puis évaluer sur des conversations séparées des cas de développement.
+3. Qualifier un modèle réellement utile avant de le relier au moteur cloud et à sa mémoire.
+4. Valider le core discret sur les appareils réels : démarrage, pause, permissions,
+   résultat des actions et continuité après redémarrage.
+5. Améliorer ensuite le confort graphique, la voix et la vision en fonction des usages.
+
+## Repères dans le dépôt
+
+| Chemin | Contenu |
+|---|---|
+| [research/kira_model/](research/kira_model) | Modèle, données de test, préparation, entraînement, évaluations et rapports. |
+| [core/](core) | Agent installé sur les machines. |
+| [app/](app) | Serveur, mémoire, sessions, routeur, projets, outils et tâches. |
+| [web/](web) | Interface de discussion et de contrôle. |
+| [tests/](tests) | Tests du système et du core. |
+| [scripts/](scripts) | Démonstration, indexation mémoire et sauvegardes personnelles. |
+| [docs/](docs) | Conception, commandes, résultats et limites. |
+| [supabase/](supabase) | Migration vectorielle et fonction d'embeddings optionnelle. |
+| [render.yaml](render.yaml) | Configuration d'hébergement existante. |
+| [legacy/](legacy) | Ancienne version conservée pour référence. |
+
+Documentation du système : [mémoire V3](docs/memory-v3.md),
+[sessions et fournisseurs](docs/router-auth-v3.md),
+[continuité, documents et sauvegardes](docs/continuity-v4.md).
