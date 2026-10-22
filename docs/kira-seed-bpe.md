@@ -38,10 +38,20 @@ par octets et en remplaçant le chemin du corpus si nécessaire :
 
 ```powershell
 $kiraLabPython = "$env:USERPROFILE\KIRA-Lab\.venv\Scripts\python.exe"
-& $kiraLabPython -m pip install -r research/kira_model/requirements-bpe.txt
+& $kiraLabPython -m pip install --no-deps --only-binary=:all: -r research/kira_model/requirements-bpe.txt
 & $kiraLabPython -m research.kira_model.bpe_experiment train --corpus research/kira_model/data/fr-literature-v1/corpus.jsonl --output research/kira_model/runs/fr-bpe-001 --steps 1000
 & $kiraLabPython -m research.kira_model.bpe_experiment generate --checkpoint research/kira_model/runs/fr-bpe-001/weights.pt --prompt "Une chercheuse" --temperature 0.5 --max-new-tokens 100
 ```
+
+Le profil local installe uniquement la roue binaire de Tokenizers. Ses dépendances
+déclarées pour le Hub ne sont pas utilisées : sur Python 3.15/Windows, elles peuvent
+déclencher une compilation de PyYAML et demander les outils C++ de développement.
+Les options `--no-deps --only-binary=:all:` évitent ce téléchargement et toute
+compilation. Elles concernent seulement ce complément ; PyTorch et ses propres
+dépendances restent installés normalement. Les API de téléchargement/push du Hub
+ne font pas partie de ce profil et `pip check` peut signaler cette dépendance omise.
+Les tests du modèle bloquent explicitement les imports du Hub et de PyYAML pour
+vérifier que notre entraînement local n'en dépend pas.
 
 Ne pas relancer `prepare_fr` dans un dossier contenant déjà `corpus.jsonl`.
 L'empreinte du corpus français prévu est

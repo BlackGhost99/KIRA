@@ -26,8 +26,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r research/kira_model/requirements.txt
-      - run: python -m pip install -r research/kira_model/requirements-bpe.txt
-      - run: python -m unittest discover -s research/kira_model/tests -v
+      - run: python -m pip install --no-deps --only-binary=:all: -r research/kira_model/requirements-bpe.txt
+      - name: Tests du modèle sans Hub ni PyYAML
+        run: >-
+          python -c "import sys, unittest;
+          sys.modules.update(huggingface_hub=None, yaml=None);
+          suite = unittest.defaultTestLoader.discover('research/kira_model/tests');
+          result = unittest.TextTestRunner(verbosity=2).run(suite);
+          sys.exit(not result.wasSuccessful())"
 
   bpe-pilot:
     runs-on: ubuntu-latest
@@ -38,7 +44,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r research/kira_model/requirements.txt
-      - run: python -m pip install -r research/kira_model/requirements-bpe.txt
+      - run: python -m pip install --no-deps --only-binary=:all: -r research/kira_model/requirements-bpe.txt
       - name: Corpus français vérifié
         run: python -m research.kira_model.prepare_fr --output "$RUNNER_TEMP/kira-bpe-corpus"
       - name: Pilote CPU de 1000 étapes

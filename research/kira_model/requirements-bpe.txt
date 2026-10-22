@@ -1,2 +1,4 @@
-# Complément optionnel au laboratoire PyTorch CPU existant.
+# Complément local au laboratoire PyTorch CPU existant.
+# Installer avec --no-deps --only-binary=:all: : aucun usage des API Hub.
+# PyTorch et ses dépendances sont installés séparément via requirements.txt.
 tokenizers==0.23.3
