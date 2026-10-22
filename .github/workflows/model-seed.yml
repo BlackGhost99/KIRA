@@ -26,4 +26,31 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r research/kira_model/requirements.txt
+      - run: python -m pip install -r research/kira_model/requirements-bpe.txt
       - run: python -m unittest discover -s research/kira_model/tests -v
+
+  bpe-pilot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --index-url https://download.pytorch.org/whl/cpu -r research/kira_model/requirements.txt
+      - run: python -m pip install -r research/kira_model/requirements-bpe.txt
+      - name: Corpus français vérifié
+        run: python -m research.kira_model.prepare_fr --output "$RUNNER_TEMP/kira-bpe-corpus"
+      - name: Pilote CPU de 1000 étapes
+        run: python -m research.kira_model.bpe_experiment train --corpus "$RUNNER_TEMP/kira-bpe-corpus/corpus.jsonl" --output "$RUNNER_TEMP/kira-bpe-run" --steps 1000
+      - name: Générations observées
+        run: |
+          python -m research.kira_model.bpe_experiment generate --checkpoint "$RUNNER_TEMP/kira-bpe-run/weights.pt" --prompt "Une chercheuse" --temperature 0.5 --max-new-tokens 100
+          python -m research.kira_model.bpe_experiment generate --checkpoint "$RUNNER_TEMP/kira-bpe-run/weights.pt" --prompt "Il regarda" --temperature 0.5 --max-new-tokens 100
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kira-seed-bpe-pilot
+          path: |
+            ${{ runner.temp }}/kira-bpe-run/manifest.json
+            ${{ runner.temp }}/kira-bpe-run/tokenizer.json
+            ${{ runner.temp }}/kira-bpe-run/weights.pt
+          retention-days: 14

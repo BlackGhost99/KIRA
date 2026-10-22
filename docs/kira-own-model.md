@@ -68,8 +68,8 @@ conserve les métriques, les empreintes et cet échec qualitatif : ces chiffres 
 pas un score d'intelligence ni une comparaison avec un autre modèle.
 Cet essai initial utilisait des lots de quatre séquences et deux threads. Les
 nouveaux réglages par défaut sont plus prudents : **un lot de une séquence et un
-thread CPU**, sans GPU. Ils n'ont pas encore été mesurés sur le PC du propriétaire.
-Les chiffres du rapport initial ne décrivent donc pas le débit de ce PC.
+thread CPU**, sans GPU. Le premier entraînement sur le PC du propriétaire est décrit ci-dessous ; les
+chiffres du rapport initial ne mesurent pas son débit.
 
 Exécution depuis la racine du dépôt, dans un environnement séparé (Python 3.10+) :
 
@@ -174,6 +174,21 @@ par livre, les empreintes, l'import hors réseau et l'absence d'influence du tex
 réservé au test sur les poids appris. Le temps de calcul mesuré dans l'environnement
 de développement ne remplace pas la mesure sur la machine du propriétaire.
 
+L'essai local communiqué le 22 octobre 2026 a atteint **1 000 étapes** :
+validation initiale **5,6000757116**, finale **2,4263584869**, avec
+**0,215174 seconde par étape** sur le segment mesuré. À 50 étapes, le propriétaire
+avait mesuré une validation de 2,8587574996. Le texte généré après 1 000 étapes
+reste incohérent. Cette baisse confirme un apprentissage sur ce corpus, sans
+établir une compétence de conversation.
+
+## Troisième expérience : vocabulaire appris sur le corpus
+
+L'[expérience BPE](kira-seed-bpe.md) ajoute un découpage en sous-mots, entraîné
+uniquement sur le split d'apprentissage. Elle réutilise le corpus déjà préparé,
+commence avec de nouveaux poids et conserve les checkpoints par octets. La perte
+par token change d'unité ; un indicateur en bits par octet UTF-8 est également
+enregistré. Aucun gain de qualité du texte n'est supposé sans observer le pilote.
+
 ## Étapes suivantes et critères de passage
 
 1. **Cadrer une première compétence** : français de base et dialogue simple proposés.
@@ -203,8 +218,8 @@ Le modèle Seed n'est pas connecté aux machines et ne remplace pas Groq dans ce
   Un entraînement plus ambitieux sera dimensionné avec les ressources disponibles ;
   aucune réservation de GPU payant n'est lancée.
 - Calcul confirmé : seulement le PC i5-2520M / 8 Go, sans carte graphique dédiée.
-  L'import CPU et le premier essai sont réussis ; le prochain est une mesure sur le
-  nouveau corpus, avant toute durée ambitieuse. Une ressource distante gratuite éventuelle n'est ni
+  L'import CPU et l'essai de 1 000 étapes sur le corpus français sont réussis ;
+  la qualité du texte reste insuffisante. Une ressource distante gratuite éventuelle n'est ni
   réservée ni supposée disponible.
 - Première priorité proposée : français puis dialogue et tutorat scientifique,
   cohérents avec la vocation d'apprentissage de KIRA ; à ajuster avec le propriétaire.

@@ -1,0 +1,2 @@
+# Complément optionnel au laboratoire PyTorch CPU existant.
+tokenizers==0.23.3
