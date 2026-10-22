@@ -31,6 +31,7 @@ jobs:
 
   bpe-pilot:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -46,11 +47,19 @@ jobs:
         run: |
           python -m research.kira_model.bpe_experiment generate --checkpoint "$RUNNER_TEMP/kira-bpe-run/weights.pt" --prompt "Une chercheuse" --temperature 0.5 --max-new-tokens 100
           python -m research.kira_model.bpe_experiment generate --checkpoint "$RUNNER_TEMP/kira-bpe-run/weights.pt" --prompt "Il regarda" --temperature 0.5 --max-new-tokens 100
+      - name: Prolongation mesurée à 4000 étapes
+        run: |
+          cp "$RUNNER_TEMP/kira-bpe-run/manifest.json" "$RUNNER_TEMP/kira-bpe-run/manifest-1000.json"
+          python -m research.kira_model.bpe_experiment train --corpus "$RUNNER_TEMP/kira-bpe-corpus/corpus.jsonl" --output "$RUNNER_TEMP/kira-bpe-run" --steps 4000 --resume
+          python -m research.kira_model.bpe_experiment generate --checkpoint "$RUNNER_TEMP/kira-bpe-run/weights.pt" --prompt "Une chercheuse" --temperature 0.5 --max-new-tokens 100
+          python -m research.kira_model.bpe_experiment generate --checkpoint "$RUNNER_TEMP/kira-bpe-run/weights.pt" --prompt "Il regarda" --temperature 0.5 --max-new-tokens 100
+      - name: Manifeste observé
+        run: cat "$RUNNER_TEMP/kira-bpe-run/manifest.json"
       - uses: actions/upload-artifact@v4
         with:
           name: kira-seed-bpe-pilot
           path: |
-            ${{ runner.temp }}/kira-bpe-run/manifest.json
+            ${{ runner.temp }}/kira-bpe-run/manifest*.json
             ${{ runner.temp }}/kira-bpe-run/tokenizer.json
             ${{ runner.temp }}/kira-bpe-run/weights.pt
           retention-days: 14
