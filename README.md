@@ -49,6 +49,7 @@ Le laboratoire cherche encore à obtenir un dialogue pertinent et stable avec no
 | **Continuité V4** | Projets, tâches, documents/OCR, cartes d'apprentissage, sauvegarde et restauration | Code et contrats testés ; les parcours réels dans l'environnement du propriétaire restent à valider. |
 | **Interface** | Panneau web installable, projets, mémoire, accords et dictée manuelle | Les tests DOM ne remplacent pas un essai visuel, vocal ou mobile réel. |
 | **Modèle KIRA Seed 0.4** | Préparation des corpus, entraînement CPU, sauvegarde/reprise et dialogue local | Prototype de recherche : réponses hors sujet, répétitions et mauvaise gestion du contexte. Non qualifié pour servir d'assistante. |
+| **KIRA LM 0.5 (Kaggle)** | Modèle type Llama de ≈ 100 M de paramètres, corpus français épinglé (≈ 5,4 G jetons), entraînement GPU reprenable, notebooks Kaggle | Testé sur CPU et en simulation des notebooks ; pas encore entraîné sur GPU. Vitesse et qualité à mesurer. Voir le [guide Kaggle](docs/kira-kaggle.md). |
 
 Les fournisseurs externes du serveur et les poids du laboratoire sont des mécanismes
 distincts. Un appel à Groq, OpenAI ou Anthropic reste un appel à ce fournisseur.
@@ -108,6 +109,7 @@ Rapports et détails :
 - [Expérience BPE sur CPU](docs/kira-seed-bpe.md)
 - [Apprentissage du dialogue](docs/kira-seed-dialogue.md)
 - [Expérience 0.4 et limites constatées](docs/kira-language-0.4.md)
+- [KIRA LM 0.5 : entraîner sur les GPU gratuits de Kaggle](docs/kira-kaggle.md)
 - [Reproduction du dialogue « bsr »](research/kira_model/results/dialogue-v04-owner-bsr-failure.json)
 - [Comparaison des deux prolongations](research/kira_model/results/dialogue-v04-replay-study.json)
 
@@ -213,14 +215,17 @@ les réponses des fournisseurs réels ou l'installation matérielle.
 
 ## Prochaines étapes
 
-1. Revoir les données et l'apprentissage conversationnels pour améliorer la pertinence,
-   les variantes de formulation, les tours suivants et la reconnaissance de l'incertitude.
-2. Comparer des évolutions du modèle sous contraintes CPU/RAM, en conservant les échecs
-   et les régressions, puis évaluer sur des conversations séparées des cas de développement.
-3. Qualifier un modèle réellement utile avant de le relier au moteur cloud et à sa mémoire.
-4. Valider le core discret sur les appareils réels : démarrage, pause, permissions,
+1. Lancer KIRA LM 0.5 sur Kaggle en suivant le [guide](docs/kira-kaggle.md) : vérifier le compte par téléphone,
+   préparer les données, mesurer la vitesse réelle sur deux T4, puis enchaîner les sessions de préentraînement.
+2. Relire les textes générés et les 30 sondes de conversation après l'adaptation au dialogue, en conservant
+   les échecs et les régressions, puis évaluer sur des conversations séparées des cas de développement.
+3. Élargir les données de dialogue françaises après examen de leurs conditions (traductions et textes générés
+   par d'autres IA compris), puis apprendre des appels d'outils vérifiables.
+4. Qualifier un modèle réellement utile avant de le relier au moteur cloud et à sa mémoire (export prévu vers
+   llama.cpp/Ollama, que le routeur connaît déjà).
+5. Valider le core discret sur les appareils réels : démarrage, pause, permissions,
    résultat des actions et continuité après redémarrage.
-5. Améliorer ensuite le confort graphique, la voix et la vision en fonction des usages.
+6. Améliorer ensuite le confort graphique, la voix et la vision en fonction des usages.
 
 ## Repères dans le dépôt
 
