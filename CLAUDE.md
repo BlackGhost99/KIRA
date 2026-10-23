@@ -64,10 +64,23 @@ humaine de Brice, jamais une proposition de KIRA. N'y touche pas sans demande ex
   destructrices en deux appuis. Texte de l'interface en français, ton direct, vocabulaire simple.
 - Les tests ne doivent jamais appeler un vrai fournisseur ni le vrai réseau (FakeSession / ScriptedProvider).
 
+## Laboratoire du modèle (research/kira_model)
+Décision du 20/10/2026 : KIRA doit avoir **ses propres poids, initialisés de zéro** (aucun poids tiers renommé).
+Le serveur utilise encore les fournisseurs du routeur ; ne jamais présenter leur sortie comme celle du modèle KIRA.
+- Seed 0.1 à 0.4 : petits modèles CPU (PC i5-2520M, 8 Go, sans GPU), dialogue non qualifié (échec « bsr » conservé).
+- KIRA LM 0.5 : `lm.py` (type Llama), `codec.py` (rôles hors du vocabulaire texte), `corpus.py` (sources
+  épinglées révision + taille + SHA-256), `gpu_train.py` (DDP, float16, reprise exacte, arrêt avant 12 h),
+  `sft_data.py`, `lm_chat.py`, notebooks Kaggle générés par `build_notebooks.py` (`--check` testé).
+  Guide : `docs/kira-kaggle.md`. Kaggle : T4 ×2 seulement, ≈ 30 h/semaine, un notebook ne relit pas sa propre
+  sortie (d'où 2A/2B en alternance).
+- Règles : test jamais utilisé pour choisir des poids ; questions des sondes (`conversation_eval.SUITE`) exclues
+  des données ; échecs conservés dans les rapports ; budget 0 € ; tests sans réseau ni GPU.
+
 ## Commandes
 ```bash
 python -m unittest discover -s tests -t .      # toute la suite (≈ 50 s : l'évolution relance la suite sur une copie)
 python -m unittest tests.test_api              # un module
+python -m unittest discover -s research/kira_model/tests   # laboratoire (environnement à part : torch + tokenizers)
 python scripts/dev_demo.py                     # démo sans clé d'API, mot de passe « demo », port 8765 (relie une machine de démo)
 uvicorn app.main:app --reload                  # serveur local (lit .env)
 ```

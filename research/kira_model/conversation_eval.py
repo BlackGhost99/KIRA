@@ -92,8 +92,11 @@ def flags_for(text, turn):
     return flags
 
 
-def run_sessions(model, codec, scenarios=None, max_new_tokens=64):
-    from .dialogue import reply
+def run_sessions(model, codec, scenarios=None, max_new_tokens=64, reply_fn=None):
+    # reply_fn permet d'évaluer KIRA LM avec la même suite ; par défaut, le dialogue Seed historique.
+    if reply_fn is None:
+        from .dialogue import reply as reply_fn
+    reply = reply_fn
     cases = []
     for scenario in SUITE if scenarios is None else scenarios:
         history, turns = [], []
